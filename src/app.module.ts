@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ExampleMongodbDocModule } from './example-crud/example-crud.module';
+import { UserMetadataModule } from './user-metadata/user-metadata.module';
 
 const DB_IMPORTS =
   process.env.GENERATE_OPENAPI === 'true'
@@ -22,7 +22,7 @@ const DB_IMPORTS =
       isGlobal: true,
     }),
     ...DB_IMPORTS,
-    ExampleMongodbDocModule,
+    UserMetadataModule,
   ],
   controllers: [],
   providers: [],

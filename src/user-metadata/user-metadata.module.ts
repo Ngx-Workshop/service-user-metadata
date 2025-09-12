@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { NgxAuthClientModule, RemoteAuthGuard } from '@tmdjr/ngx-auth-client';
-import { ExampleCrudController } from './example-crud.controller';
-import { ExampleCrudService } from './example-crud.service';
 import {
-  ExampleMongodbDoc,
-  ExampleMongodbDocSchema,
-} from './schemas/example-mongodb-doc.schema';
+  UserMetadata,
+  UserMetadataSchema,
+} from './schemas/user-metadata.schema';
+import { UserMetadataController } from './user-metadata.controller';
+import { UserMetadataService } from './user-metadata.service';
 
 const SCHEMA_IMPORTS =
   process.env.GENERATE_OPENAPI === 'true'
     ? []
     : [
         MongooseModule.forFeature([
-          { name: ExampleMongodbDoc.name, schema: ExampleMongodbDocSchema },
+          { name: UserMetadata.name, schema: UserMetadataSchema },
         ]),
       ];
 // When generating OpenAPI, stub out the Mongoose model and the guard
@@ -21,7 +21,7 @@ const FAKE_PROVIDERS =
   process.env.GENERATE_OPENAPI === 'true'
     ? [
         {
-          provide: getModelToken(ExampleMongodbDoc.name),
+          provide: getModelToken(UserMetadata.name),
           // Minimal fake the service can accept; if service calls methods during generation (it shouldn't), add no-op fns
           useValue: {
             // common Mongoose methods we might accidentally touch
@@ -40,7 +40,7 @@ const FAKE_PROVIDERS =
     : [];
 @Module({
   imports: [NgxAuthClientModule, ...SCHEMA_IMPORTS],
-  controllers: [ExampleCrudController],
-  providers: [ExampleCrudService, ...FAKE_PROVIDERS],
+  controllers: [UserMetadataController],
+  providers: [UserMetadataService, ...FAKE_PROVIDERS],
 })
-export class ExampleMongodbDocModule {}
+export class UserMetadataModule {}
