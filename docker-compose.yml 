@@ -1,0 +1,18 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  service-user-metadata:
+    build: .
+    container_name: service-user-metadata
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env
+    networks:
+      - ngx-net
+
+networks:
+  ngx-net:
+    external: true
