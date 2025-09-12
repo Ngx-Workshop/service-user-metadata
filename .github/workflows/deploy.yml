@@ -109,5 +109,5 @@ jobs:
               --env-file .env \
               --network ngx-net \
               --restart unless-stopped \
-              -p 3003:3003 \
+              -p secrets.PORT:secrets.PORT \
               service-user-metadata

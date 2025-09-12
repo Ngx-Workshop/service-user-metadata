@@ -7,7 +7,7 @@ services:
     container_name: service-user-metadata
     restart: unless-stopped
     ports:
-      - "3003:3003"
+      - "3004:3004"
     env_file:
       - .env
     networks:
