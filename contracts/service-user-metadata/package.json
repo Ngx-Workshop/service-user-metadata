@@ -1,5 +1,5 @@
 {
-  "name": "@tmdjr/service-user-metadata-contracts",
+  "name": "@tmdjr/user-metadata-contracts",
   "version": "0.0.1",
   "description": "Types & runtime enums generated from NGX service-user-metadata spec",
   "license": "MIT",
