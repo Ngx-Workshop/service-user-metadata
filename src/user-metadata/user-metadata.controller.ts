@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -16,6 +17,7 @@ import {
   ApiProperty,
   ApiTags,
 } from '@nestjs/swagger';
+import { RemoteAuthGuard } from '@tmdjr/ngx-auth-client';
 import { CreateUserMetadataDto, UserMetadataDto } from './dto/create.dto';
 import { UpdateUserMetadataDto } from './dto/update.dto';
 import { UserMetadataService } from './user-metadata.service';
@@ -31,18 +33,21 @@ export class UserMetadataController {
   constructor(private readonly userMetadataService: UserMetadataService) {}
 
   @Post()
+  @UseGuards(RemoteAuthGuard)
   @ApiCreatedResponse({ type: CreateUserMetadataDto })
   create(@Body() createUserMetadataDto: CreateUserMetadataDto) {
     return this.userMetadataService.create(createUserMetadataDto);
   }
 
   @Get(':id')
+  @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UserMetadataDto })
   findOne(@Param('id') id: string) {
     return this.userMetadataService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
   update(
     @Param('id') id: string,
@@ -52,6 +57,7 @@ export class UserMetadataController {
   }
 
   @Delete(':id')
+  @UseGuards(RemoteAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse()
   remove(@Param('id') id: string) {
