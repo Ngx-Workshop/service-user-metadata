@@ -19,12 +19,14 @@ export class UserMetadataService {
     private userMetadataModel: Model<UserMetadataDocument>
   ) {}
 
-  async upsertByUuid(uuid: string) {
-    return this.userMetadataModel.updateOne(
-      { uuid },
-      { $setOnInsert: { uuid } },
-      { upsert: true }
-    );
+  async upsertByUuid(uuid: string): Promise<UserMetadata> {
+    return this.userMetadataModel
+      .findOneAndUpdate(
+        { uuid },
+        { $setOnInsert: { uuid } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      )
+      .exec();
   }
 
   async create(
@@ -46,12 +48,13 @@ export class UserMetadataService {
     }
   }
 
-  async findOne(id: string): Promise<UserMetadata> {
-    const userMetadata = await this.userMetadataModel.findById(id).exec();
-    if (!userMetadata) {
-      throw new NotFoundException(`UserMetadata with ID "${id}" not found`);
-    }
-    return userMetadata;
+  async findOne(uuid: string): Promise<UserMetadata> {
+    // Fallback: treat provided id as uuid
+    const userMetadata = await this.userMetadataModel.findOne({ uuid }).exec();
+    if (userMetadata) return userMetadata;
+
+    // Upsert a new record with this uuid if none exists
+    return this.upsertByUuid(uuid);
   }
 
   async update(
