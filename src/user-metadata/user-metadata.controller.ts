@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -27,10 +28,22 @@ export class AuthTestDto {
   message: string;
 }
 
-@ApiTags('Example Crud')
-@Controller('example-crud')
+@ApiTags('User Metadata')
+@Controller('user-metadata')
 export class UserMetadataController {
   constructor(private readonly userMetadataService: UserMetadataService) {}
+
+  @Put(':userId')
+  @UseGuards(RemoteAuthGuard)
+  @ApiOkResponse({ type: UserMetadataDto })
+  async upsertByUserId(
+    @Param('userId') userId: string,
+    @Body() dto: Partial<CreateUserMetadataDto>
+  ) {
+    await this.userMetadataService.upsertByUserId(userId, dto);
+    // return the current doc (optional): you can fetch and return it if you prefer
+    return { userId, ...dto };
+  }
 
   @Post()
   @UseGuards(RemoteAuthGuard)

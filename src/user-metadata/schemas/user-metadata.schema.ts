@@ -5,7 +5,7 @@ export type UserMetadataDocument = UserMetadata & Document;
 
 @Schema()
 export class UserMetadata extends Document {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true, unique: true, index: true })
   uuid: string;
 
   @Prop({ required: true })

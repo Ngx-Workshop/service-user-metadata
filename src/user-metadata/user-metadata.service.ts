@@ -19,6 +19,14 @@ export class UserMetadataService {
     private userMetadataModel: Model<UserMetadataDocument>
   ) {}
 
+  async upsertByUserId(userId: string, dto: Partial<CreateUserMetadataDto>) {
+    return this.userMetadataModel.updateOne(
+      { userId }, // match by FK
+      { $setOnInsert: { userId, ...dto, lastUpdated: new Date() } },
+      { upsert: true }
+    );
+  }
+
   async create(
     createUserMetadataDto: CreateUserMetadataDto
   ): Promise<UserMetadata> {
