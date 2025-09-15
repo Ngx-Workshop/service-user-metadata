@@ -63,7 +63,11 @@ export class UserMetadataService {
   ): Promise<UserMetadata> {
     try {
       const updateUserMetadata = await this.userMetadataModel
-        .findByIdAndUpdate({ uuid }, updateUserMetadataDto, { new: true })
+        .findOneAndUpdate(
+          { uuid },
+          { ...updateUserMetadataDto, lastUpdated: new Date() },
+          { new: true }
+        )
         .exec();
 
       if (!updateUserMetadata) {
