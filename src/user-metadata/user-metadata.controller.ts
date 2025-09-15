@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Patch,
   Post,
   Put,
@@ -18,7 +17,11 @@ import {
   ApiProperty,
   ApiTags,
 } from '@nestjs/swagger';
-import { RemoteAuthGuard } from '@tmdjr/ngx-auth-client';
+import {
+  ActiveUser,
+  IActiveUserData,
+  RemoteAuthGuard,
+} from '@tmdjr/ngx-auth-client';
 import { CreateUserMetadataDto, UserMetadataDto } from './dto/create.dto';
 import { UpdateUserMetadataDto } from './dto/update.dto';
 import { UserMetadataService } from './user-metadata.service';
@@ -33,16 +36,16 @@ export class AuthTestDto {
 export class UserMetadataController {
   constructor(private readonly userMetadataService: UserMetadataService) {}
 
-  @Put(':userId')
+  @Put()
   @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UserMetadataDto })
   async upsertByUserId(
-    @Param('userId') userId: string,
+    @ActiveUser() user: IActiveUserData,
     @Body() dto: Partial<CreateUserMetadataDto>
   ) {
-    await this.userMetadataService.upsertByUuid(userId);
+    await this.userMetadataService.upsertByUuid(user.sub);
     // return the current doc (optional): you can fetch and return it if you prefer
-    return { userId, ...dto };
+    return { user, ...dto };
   }
 
   @Post()
@@ -52,28 +55,28 @@ export class UserMetadataController {
     return this.userMetadataService.create(createUserMetadataDto);
   }
 
-  @Get(':id')
+  @Get()
   @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UserMetadataDto })
-  findOne(@Param('id') id: string) {
-    return this.userMetadataService.findOne(id);
+  findOne(@ActiveUser() user: IActiveUserData) {
+    return this.userMetadataService.findOne(user.sub);
   }
 
-  @Patch(':id')
+  @Patch()
   @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
   update(
-    @Param('id') id: string,
+    @ActiveUser() user: IActiveUserData,
     @Body() updateUserMetadataDto: UpdateUserMetadataDto
   ) {
-    return this.userMetadataService.update(id, updateUserMetadataDto);
+    return this.userMetadataService.update(user.sub, updateUserMetadataDto);
   }
 
-  @Delete(':id')
+  @Delete()
   @UseGuards(RemoteAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse()
-  remove(@Param('id') id: string) {
-    return this.userMetadataService.remove(id);
+  remove(@ActiveUser() user: IActiveUserData) {
+    return this.userMetadataService.remove(user.sub);
   }
 }

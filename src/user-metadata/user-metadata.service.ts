@@ -58,16 +58,16 @@ export class UserMetadataService {
   }
 
   async update(
-    id: string,
+    uuid: string,
     updateUserMetadataDto: UpdateUserMetadataDto
   ): Promise<UserMetadata> {
     try {
       const updateUserMetadata = await this.userMetadataModel
-        .findByIdAndUpdate(id, updateUserMetadataDto, { new: true })
+        .findByIdAndUpdate({ uuid }, updateUserMetadataDto, { new: true })
         .exec();
 
       if (!updateUserMetadata) {
-        throw new NotFoundException(`UserMetadata with ID "${id}" not found`);
+        throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);
       }
 
       return updateUserMetadata;
@@ -81,10 +81,12 @@ export class UserMetadataService {
     }
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.userMetadataModel.findByIdAndDelete(id).exec();
+  async remove(uuid: string): Promise<void> {
+    const result = await this.userMetadataModel
+      .findByIdAndDelete({ uuid })
+      .exec();
     if (!result) {
-      throw new NotFoundException(`UserMetadata with ID "${id}" not found`);
+      throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);
     }
   }
 }
