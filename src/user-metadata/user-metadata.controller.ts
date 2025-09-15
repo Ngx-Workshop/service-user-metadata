@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Patch,
   Post,
   Put,
@@ -34,6 +35,8 @@ export class AuthTestDto {
 @ApiTags('User Metadata')
 @Controller('user-metadata')
 export class UserMetadataController {
+  private readonly logger = new Logger(UserMetadataController.name);
+
   constructor(private readonly userMetadataService: UserMetadataService) {}
 
   @Put()
@@ -59,6 +62,7 @@ export class UserMetadataController {
   @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UserMetadataDto })
   findOne(@ActiveUser() user: IActiveUserData) {
+    this.logger.log(`Fetching user metadata for user ID: ${user.sub}`);
     return this.userMetadataService.findOne(user.sub);
   }
 
