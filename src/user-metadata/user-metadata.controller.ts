@@ -40,7 +40,7 @@ export class UserMetadataController {
     @Param('userId') userId: string,
     @Body() dto: Partial<CreateUserMetadataDto>
   ) {
-    await this.userMetadataService.upsertByUserId(userId, dto);
+    await this.userMetadataService.upsertByUuid(userId);
     // return the current doc (optional): you can fetch and return it if you prefer
     return { userId, ...dto };
   }
