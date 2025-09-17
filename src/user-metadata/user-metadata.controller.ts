@@ -47,6 +47,7 @@ export class UserMetadataController {
     @Body() dto: Partial<CreateUserMetadataDto>
   ) {
     await this.userMetadataService.upsertByUuid(user.sub);
+    this.logger.log(`Upserted user metadata for user ID: ${user.sub}`);
     return { user, ...dto };
   }
 
