@@ -46,7 +46,7 @@ export class UserMetadataController {
     @ActiveUser() user: IActiveUserData,
     @Body() dto: Partial<CreateUserMetadataDto>
   ) {
-    this.logger.log(`Upserting user metadata for user ID: ${user.sub}`);
+    this.logger.log(`Testing Upserting user metadata for user ID: ${user.sub}`);
     await this.userMetadataService.upsertByUuid(user.sub);
     // return the current doc (optional): you can fetch and return it if you prefer
     return { user, ...dto };
