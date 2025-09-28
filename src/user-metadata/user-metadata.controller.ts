@@ -9,7 +9,9 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiCreatedResponse,
@@ -24,6 +26,8 @@ import {
 } from '@tmdjr/ngx-auth-client';
 import {
   CreateUserMetadataDto,
+  PaginatedUserMetadataDto,
+  PaginationQueryDto,
   UpdateUserMetadataDto,
   UserMetadataDto,
 } from './dto/user-metadata.dto';
@@ -61,6 +65,26 @@ export class UserMetadataController {
   findOne(@ActiveUser() user: IActiveUserData) {
     this.logger.log(`Fetching user metadata for user ID: ${user.sub}`);
     return this.userMetadataService.findOne(user.sub);
+  }
+
+  @Get('all')
+  @UseGuards(RemoteAuthGuard)
+  @ApiOkResponse({ type: PaginatedUserMetadataDto })
+  findAll(
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      })
+    )
+    paginationQuery: PaginationQueryDto
+  ) {
+    const { page, limit } = paginationQuery;
+    this.logger.log(
+      `Fetching paginated user metadata with page=${page}, limit=${limit}`
+    );
+    return this.userMetadataService.findAllPaginated(page, limit);
   }
 
   @Patch()

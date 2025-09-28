@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class UserMetadataDto {
   @ApiProperty() _id: string;
@@ -61,3 +69,35 @@ export class CreateUserMetadataDto {
 }
 
 export class UpdateUserMetadataDto extends PartialType(CreateUserMetadataDto) {}
+
+export class PaginationQueryDto {
+  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 25 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit = 25;
+}
+
+export class PaginatedUserMetadataDto {
+  @ApiProperty({ type: [UserMetadataDto] })
+  data: UserMetadataDto[];
+
+  @ApiProperty()
+  total: number;
+
+  @ApiProperty()
+  page: number;
+
+  @ApiProperty()
+  limit: number;
+
+  @ApiProperty()
+  totalPages: number;
+}

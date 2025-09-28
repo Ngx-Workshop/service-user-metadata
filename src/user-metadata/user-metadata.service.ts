@@ -4,10 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { plainToInstance } from 'class-transformer';
 import { Model } from 'mongoose';
 import {
   CreateUserMetadataDto,
+  PaginatedUserMetadataDto,
   UpdateUserMetadataDto,
+  UserMetadataDto,
 } from './dto/user-metadata.dto';
 import {
   UserMetadata,
@@ -87,9 +90,39 @@ export class UserMetadataService {
     }
   }
 
+  async findAllPaginated(
+    page: number,
+    limit: number
+  ): Promise<PaginatedUserMetadataDto> {
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safePage = Math.max(page, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [data, total] = await Promise.all([
+      this.userMetadataModel
+        .find()
+        .sort({ _id: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean()
+        .exec(),
+      this.userMetadataModel.countDocuments().exec(),
+    ]);
+
+    const totalPages = Math.max(Math.ceil(total / safeLimit), 1);
+
+    return {
+      data: plainToInstance(UserMetadataDto, data),
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages,
+    };
+  }
+
   async remove(uuid: string): Promise<void> {
     const result = await this.userMetadataModel
-      .findByIdAndDelete({ uuid })
+      .findOneAndDelete({ uuid })
       .exec();
     if (!result) {
       throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);

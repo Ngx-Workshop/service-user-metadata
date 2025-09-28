@@ -22,6 +22,9 @@ export class UserMetadata extends Document {
 
   @Prop({ default: 'No description provided' })
   description: string;
+
+  @Prop({ type: Date, default: Date.now })
+  lastUpdated: Date;
 }
 
 export const UserMetadataSchema = SchemaFactory.createForClass(UserMetadata);
