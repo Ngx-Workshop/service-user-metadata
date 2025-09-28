@@ -15,7 +15,6 @@ import {
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiOkResponse,
-  ApiProperty,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -26,11 +25,6 @@ import {
 import { CreateUserMetadataDto, UserMetadataDto } from './dto/create.dto';
 import { UpdateUserMetadataDto } from './dto/update.dto';
 import { UserMetadataService } from './user-metadata.service';
-
-export class AuthTestDto {
-  @ApiProperty()
-  message: string;
-}
 
 @ApiTags('User Metadata')
 @Controller('user-metadata')

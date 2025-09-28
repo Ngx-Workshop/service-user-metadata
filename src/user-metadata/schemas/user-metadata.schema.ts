@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 
-export type UserMetadataDocument = UserMetadata & Document;
+export type UserMetadataDocument = HydratedDocument<UserMetadata>;
 
 @Schema()
 export class UserMetadata extends Document {
@@ -17,7 +17,7 @@ export class UserMetadata extends Document {
   @Prop({ required: true, email: true })
   email: string;
 
-  @Prop({ required: true, email: true })
+  @Prop({ required: true })
   avatarUrl: string;
 
   @Prop({ default: 'No description provided' })
