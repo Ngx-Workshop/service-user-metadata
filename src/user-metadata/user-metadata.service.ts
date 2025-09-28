@@ -5,8 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateUserMetadataDto } from './dto/create.dto';
-import { UpdateUserMetadataDto } from './dto/update.dto';
+import {
+  CreateUserMetadataDto,
+  UpdateUserMetadataDto,
+} from './dto/user-metadata.dto';
 import {
   UserMetadata,
   UserMetadataDocument,

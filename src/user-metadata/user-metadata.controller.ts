@@ -22,8 +22,11 @@ import {
   IActiveUserData,
   RemoteAuthGuard,
 } from '@tmdjr/ngx-auth-client';
-import { CreateUserMetadataDto, UserMetadataDto } from './dto/create.dto';
-import { UpdateUserMetadataDto } from './dto/update.dto';
+import {
+  CreateUserMetadataDto,
+  UpdateUserMetadataDto,
+  UserMetadataDto,
+} from './dto/user-metadata.dto';
 import { UserMetadataService } from './user-metadata.service';
 
 @ApiTags('User Metadata')

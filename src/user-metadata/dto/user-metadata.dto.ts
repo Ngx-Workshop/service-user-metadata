@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class UserMetadataDto {
@@ -59,3 +59,5 @@ export class CreateUserMetadataDto {
   @IsOptional()
   description?: string;
 }
+
+export class UpdateUserMetadataDto extends PartialType(CreateUserMetadataDto) {}
