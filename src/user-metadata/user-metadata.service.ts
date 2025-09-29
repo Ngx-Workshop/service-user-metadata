@@ -33,8 +33,8 @@ export class UserMetadataService {
       .findOneAndUpdate(
         { uuid },
         {
-          $setOnInsert: { uuid, email },
-          $set: { email },
+          $setOnInsert: { uuid },
+          $set: { email, lastUpdated: new Date() },
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       )
