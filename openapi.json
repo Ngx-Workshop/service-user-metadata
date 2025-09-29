@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/example-crud/auth-test": {
-      "get": {
-        "operationId": "ExampleCrudController_authTest",
+    "/user-metadata": {
+      "put": {
+        "operationId": "UserMetadataController_upsertByUserId",
         "parameters": [],
         "responses": {
           "200": {
@@ -11,27 +11,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuthTestDto"
+                  "$ref": "#/components/schemas/UserMetadataDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "Example Crud"
+          "User Metadata"
         ]
-      }
-    },
-    "/example-crud": {
+      },
       "post": {
-        "operationId": "ExampleCrudController_create",
+        "operationId": "UserMetadataController_create",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateExampleMongodbDocDto"
+                "$ref": "#/components/schemas/CreateUserMetadataDto"
               }
             }
           }
@@ -42,96 +40,44 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExampleMongodbDocDto"
+                  "$ref": "#/components/schemas/CreateUserMetadataDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "Example Crud"
+          "User Metadata"
         ]
       },
       "get": {
-        "operationId": "ExampleCrudController_findAll",
-        "parameters": [
-          {
-            "name": "archived",
-            "required": false,
-            "in": "query",
-            "description": "Filter by archived status",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
+        "operationId": "UserMetadataController_findOne",
+        "parameters": [],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ExampleMongodbDocDto"
-                  }
+                  "$ref": "#/components/schemas/UserMetadataDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "Example Crud"
-        ]
-      }
-    },
-    "/example-crud/{id}": {
-      "get": {
-        "operationId": "ExampleCrudController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExampleMongodbDocDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Example Crud"
+          "User Metadata"
         ]
       },
       "patch": {
-        "operationId": "ExampleCrudController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "UserMetadataController_update",
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateExampleMongodbDocDto"
+                "$ref": "#/components/schemas/UpdateUserMetadataDto"
               }
             }
           }
@@ -142,48 +88,47 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExampleMongodbDocDto"
+                  "$ref": "#/components/schemas/UpdateUserMetadataDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "Example Crud"
+          "User Metadata"
         ]
       },
       "delete": {
-        "operationId": "ExampleCrudController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "UserMetadataController_remove",
+        "parameters": [],
         "responses": {
           "204": {
             "description": ""
           }
         },
         "tags": [
-          "Example Crud"
+          "User Metadata"
         ]
       }
     },
-    "/example-crud/name/{name}": {
+    "/user-metadata/all": {
       "get": {
-        "operationId": "ExampleCrudController_findByName",
+        "operationId": "UserMetadataController_findAll",
         "parameters": [
           {
-            "name": "name",
-            "required": true,
-            "in": "path",
+            "name": "page",
+            "required": false,
+            "in": "query",
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/Object"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Object"
             }
           }
         ],
@@ -193,74 +138,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExampleMongodbDocDto"
+                  "$ref": "#/components/schemas/PaginatedUserMetadataDto"
                 }
               }
             }
           }
         },
         "tags": [
-          "Example Crud"
-        ]
-      }
-    },
-    "/example-crud/{id}/archive": {
-      "patch": {
-        "operationId": "ExampleCrudController_archive",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExampleMongodbDocDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Example Crud"
-        ]
-      }
-    },
-    "/example-crud/{id}/unarchive": {
-      "patch": {
-        "operationId": "ExampleCrudController_unarchive",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExampleMongodbDocDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "Example Crud"
+          "User Metadata"
         ]
       }
     }
@@ -275,103 +160,30 @@
   "servers": [],
   "components": {
     "schemas": {
-      "AuthTestDto": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "message"
-        ]
-      },
-      "ExampleMongodbDocObjectDto": {
-        "type": "object",
-        "properties": {
-          "street": {
-            "type": "string"
-          },
-          "city": {
-            "type": "string"
-          },
-          "state": {
-            "type": "string"
-          },
-          "zip": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "street",
-          "city",
-          "state",
-          "zip"
-        ]
-      },
-      "CreateExampleMongodbDocDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "SOME_ENUM",
-              "SOME_OTHER_ENUM"
-            ]
-          },
-          "description": {
-            "type": "string"
-          },
-          "archived": {
-            "type": "boolean"
-          },
-          "exampleMongodbDocObject": {
-            "$ref": "#/components/schemas/ExampleMongodbDocObjectDto"
-          },
-          "lastUpdated": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "name",
-          "type"
-        ]
-      },
-      "ExampleMongodbDocDto": {
+      "UserMetadataDto": {
         "type": "object",
         "properties": {
           "_id": {
             "type": "string"
           },
-          "name": {
+          "uuid": {
             "type": "string"
           },
-          "type": {
-            "type": "string",
-            "enum": [
-              "SOME_ENUM",
-              "SOME_OTHER_ENUM"
-            ]
+          "firstName": {
+            "type": "string"
           },
-          "version": {
-            "type": "number"
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
           },
           "description": {
-            "type": "string"
-          },
-          "lastUpdated": {
             "type": "string",
-            "format": "date-time"
-          },
-          "archived": {
-            "type": "boolean"
-          },
-          "exampleMongodbDocObject": {
-            "$ref": "#/components/schemas/ExampleMongodbDocObjectDto"
+            "default": "No description provided"
           },
           "__v": {
             "type": "number"
@@ -379,40 +191,92 @@
         },
         "required": [
           "_id",
-          "name",
-          "type",
-          "version",
-          "description",
-          "lastUpdated",
-          "archived",
+          "uuid",
           "__v"
         ]
       },
-      "UpdateExampleMongodbDocDto": {
+      "CreateUserMetadataDto": {
         "type": "object",
         "properties": {
-          "name": {
+          "uuid": {
             "type": "string"
           },
-          "type": {
-            "type": "string",
-            "enum": [
-              "SOME_ENUM",
-              "SOME_OTHER_ENUM"
-            ]
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
           },
           "description": {
+            "type": "string",
+            "default": "No description provided"
+          }
+        },
+        "required": [
+          "uuid"
+        ]
+      },
+      "Object": {
+        "type": "object",
+        "properties": {}
+      },
+      "PaginatedUserMetadataDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserMetadataDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "totalPages": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "data",
+          "total",
+          "page",
+          "limit",
+          "totalPages"
+        ]
+      },
+      "UpdateUserMetadataDto": {
+        "type": "object",
+        "properties": {
+          "uuid": {
             "type": "string"
           },
-          "archived": {
-            "type": "boolean"
+          "firstName": {
+            "type": "string"
           },
-          "exampleMongodbDocObject": {
-            "$ref": "#/components/schemas/ExampleMongodbDocObjectDto"
+          "lastName": {
+            "type": "string"
           },
-          "lastUpdated": {
+          "email": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "description": {
             "type": "string",
-            "format": "date-time"
+            "default": "No description provided"
           }
         }
       }

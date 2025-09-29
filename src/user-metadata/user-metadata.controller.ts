@@ -47,7 +47,7 @@ export class UserMetadataController {
     @ActiveUser() user: IActiveUserData,
     @Body() dto: Partial<CreateUserMetadataDto>
   ) {
-    await this.userMetadataService.upsertByUuid(user.sub);
+    await this.userMetadataService.upsertByUuid(user);
     this.logger.log(`Upserted user metadata for user ID: ${user.sub}`);
     return { user, ...dto };
   }
@@ -63,8 +63,8 @@ export class UserMetadataController {
   @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UserMetadataDto })
   findOne(@ActiveUser() user: IActiveUserData) {
-    this.logger.log(`Fetching user metadata for user ID: ${user.sub}`);
-    return this.userMetadataService.findOne(user.sub);
+    this.logger.log(`Fetching user metadata for user ID: ${user}`);
+    return this.userMetadataService.findOne(user);
   }
 
   @Get('all')

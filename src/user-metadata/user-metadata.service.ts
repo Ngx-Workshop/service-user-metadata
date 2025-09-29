@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { IActiveUserData } from '@tmdjr/ngx-auth-client';
 import { plainToInstance } from 'class-transformer';
 import { Model } from 'mongoose';
 import {
@@ -24,11 +25,17 @@ export class UserMetadataService {
     private userMetadataModel: Model<UserMetadataDocument>
   ) {}
 
-  async upsertByUuid(uuid: string): Promise<UserMetadata> {
+  async upsertByUuid({
+    sub: uuid,
+    email,
+  }: IActiveUserData): Promise<UserMetadata> {
     return this.userMetadataModel
       .findOneAndUpdate(
         { uuid },
-        { $setOnInsert: { uuid } },
+        {
+          $setOnInsert: { uuid, email },
+          $set: { email },
+        },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       )
       .exec();
@@ -53,13 +60,15 @@ export class UserMetadataService {
     }
   }
 
-  async findOne(uuid: string): Promise<UserMetadata> {
+  async findOne(user: IActiveUserData): Promise<UserMetadata> {
     // Fallback: treat provided id as uuid
-    const userMetadata = await this.userMetadataModel.findOne({ uuid }).exec();
+    const userMetadata = await this.userMetadataModel
+      .findOne({ uuid: user.sub })
+      .exec();
     if (userMetadata) return userMetadata;
 
     // Upsert a new record with this uuid if none exists
-    return this.upsertByUuid(uuid);
+    return this.upsertByUuid(user);
   }
 
   async update(
