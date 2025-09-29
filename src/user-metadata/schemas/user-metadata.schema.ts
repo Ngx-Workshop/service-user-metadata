@@ -4,7 +4,7 @@ import { HydratedDocument } from 'mongoose';
 export type UserMetadataDocument = HydratedDocument<UserMetadata>;
 
 @Schema()
-export class UserMetadata extends Document {
+export class UserMetadata {
   @Prop({ required: true, unique: true, index: true })
   uuid: string;
 
