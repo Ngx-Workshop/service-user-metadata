@@ -23,6 +23,8 @@ import {
   ActiveUser,
   IActiveUserData,
   RemoteAuthGuard,
+  Role,
+  Roles,
 } from '@tmdjr/ngx-auth-client';
 import {
   CreateUserMetadataDto,
@@ -68,7 +70,7 @@ export class UserMetadataController {
   }
 
   @Get('all')
-  @UseGuards(RemoteAuthGuard)
+  @Roles(Role.Admin)
   @ApiOkResponse({ type: PaginatedUserMetadataDto })
   findAll(
     @Query(
