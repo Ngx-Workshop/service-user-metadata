@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import { NgxAuthClientModule, RemoteAuthGuard } from '@tmdjr/ngx-auth-client';
+import {
+  NgxAuthClientModule,
+  RemoteAuthGuard,
+  RolesGuard,
+} from '@tmdjr/ngx-auth-client';
 import {
   UserMetadata,
   UserMetadataSchema,
@@ -41,6 +46,17 @@ const FAKE_PROVIDERS =
 @Module({
   imports: [NgxAuthClientModule, ...SCHEMA_IMPORTS],
   controllers: [UserMetadataController],
-  providers: [UserMetadataService, ...FAKE_PROVIDERS],
+  providers: [
+    UserMetadataService,
+    {
+      provide: APP_GUARD,
+      useClass: RemoteAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    ...FAKE_PROVIDERS,
+  ],
 })
 export class UserMetadataModule {}
