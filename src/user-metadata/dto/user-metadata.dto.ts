@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { Role } from '@tmdjr/ngx-auth-client';
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -14,6 +16,9 @@ export class UserMetadataDto {
 
   @ApiProperty()
   uuid: string;
+
+  @ApiProperty({ enum: Role })
+  role: Role;
 
   @ApiPropertyOptional()
   firstName?: string;
@@ -41,6 +46,10 @@ export class CreateUserMetadataDto {
   @IsString()
   @IsNotEmpty()
   uuid: string;
+
+  @ApiPropertyOptional({ enum: Role })
+  @IsEnum(Role)
+  role?: Role;
 
   @ApiPropertyOptional()
   @IsString()

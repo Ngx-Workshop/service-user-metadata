@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Role } from '@tmdjr/ngx-auth-client';
 import { HydratedDocument } from 'mongoose';
 
 export type UserMetadataDocument = HydratedDocument<UserMetadata>;
@@ -7,6 +8,10 @@ export type UserMetadataDocument = HydratedDocument<UserMetadata>;
 export class UserMetadata {
   @Prop({ required: true, unique: true, index: true })
   uuid: string;
+
+  //role
+  @Prop({ enum: Role, default: Role.Regular })
+  role: Role;
 
   @Prop({ required: true })
   firstName: string;

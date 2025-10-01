@@ -169,6 +169,14 @@
           "uuid": {
             "type": "string"
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "publisher",
+              "admin"
+            ]
+          },
           "firstName": {
             "type": "string"
           },
@@ -192,6 +200,7 @@
         "required": [
           "_id",
           "uuid",
+          "role",
           "__v"
         ]
       },
@@ -200,6 +209,14 @@
         "properties": {
           "uuid": {
             "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "publisher",
+              "admin"
+            ]
           },
           "firstName": {
             "type": "string"
@@ -261,6 +278,14 @@
         "properties": {
           "uuid": {
             "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "publisher",
+              "admin"
+            ]
           },
           "firstName": {
             "type": "string"
