@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import {
 @Injectable()
 export class UserMetadataService {
   baseUrl = process.env.AUTH_BASE_URL ?? 'https://auth.ngx-workshop.io';
+  private readonly logger = new Logger(UserMetadataService.name);
 
   constructor(
     @InjectModel(UserMetadata.name)
@@ -193,6 +195,10 @@ export class UserMetadataService {
         })
       );
     } catch (err) {
+      this.logger.error(
+        `Failed to update user role for user ID: ${userId} to role: ${role}`,
+        err instanceof Error ? err.stack : undefined
+      );
       throw new InternalServerErrorException('Updateing user role failed');
     }
   }
