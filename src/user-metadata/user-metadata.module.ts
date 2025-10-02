@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
@@ -44,7 +45,7 @@ const FAKE_PROVIDERS =
       ]
     : [];
 @Module({
-  imports: [NgxAuthClientModule, ...SCHEMA_IMPORTS],
+  imports: [HttpModule, NgxAuthClientModule, ...SCHEMA_IMPORTS],
   controllers: [UserMetadataController],
   providers: [
     UserMetadataService,

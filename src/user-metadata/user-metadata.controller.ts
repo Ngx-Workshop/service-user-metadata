@@ -10,6 +10,7 @@ import {
   Post,
   Put,
   Query,
+  Request,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
@@ -97,6 +98,18 @@ export class UserMetadataController {
     @Body() updateUserMetadataDto: UpdateUserMetadataDto
   ) {
     return this.userMetadataService.update(user.sub, updateUserMetadataDto);
+  }
+
+  @Put('role')
+  @Roles(Role.Admin)
+  @ApiOkResponse({ type: UpdateUserMetadataDto })
+  updateRole(
+    @Query('userId') userId: string,
+    @Query('role') role: Role,
+    @Request() request
+  ) {
+    this.logger.log(`Updating role for user ID: ${userId} to role: ${role}`);
+    return this.userMetadataService.updateRole(userId, role, request);
   }
 
   @Delete()

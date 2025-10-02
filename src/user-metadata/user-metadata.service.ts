@@ -1,12 +1,17 @@
+import { HttpService } from '@nestjs/axios';
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { IActiveUserData } from '@tmdjr/ngx-auth-client';
 import { plainToInstance } from 'class-transformer';
+import { Request } from 'express';
 import { Model } from 'mongoose';
+import { firstValueFrom } from 'rxjs';
 import {
   CreateUserMetadataDto,
   PaginatedUserMetadataDto,
@@ -20,9 +25,12 @@ import {
 
 @Injectable()
 export class UserMetadataService {
+  baseUrl = process.env.AUTH_BASE_URL ?? 'https://auth.ngx-workshop.io';
+
   constructor(
     @InjectModel(UserMetadata.name)
-    private userMetadataModel: Model<UserMetadataDocument>
+    private userMetadataModel: Model<UserMetadataDocument>,
+    private httpService: HttpService
   ) {}
 
   async upsertByUuid({
@@ -135,6 +143,57 @@ export class UserMetadataService {
       .exec();
     if (!result) {
       throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);
+    }
+  }
+
+  async updateRole(
+    userId: string,
+    role: string,
+    request: Request
+  ): Promise<UserMetadata> {
+    const updatedUserMetadata = await this.userMetadataModel
+      .findOneAndUpdate(
+        { uuid: userId },
+        { role, lastUpdated: new Date() },
+        { new: true }
+      )
+      .exec();
+
+    if (!updatedUserMetadata) {
+      throw new NotFoundException(`UserMetadata with ID "${userId}" not found`);
+    }
+
+    void this.updateUserRole(userId, role, request);
+    return updatedUserMetadata;
+  }
+
+  async updateUserRole(
+    userId: string,
+    role: string,
+    request: Request
+  ): Promise<void> {
+    const rawAuth = Array.isArray(request.headers['authorization'])
+      ? request.headers['authorization'][0]
+      : request.headers['authorization'];
+    const headerToken = rawAuth?.toString().startsWith('Bearer ')
+      ? rawAuth.toString().slice(7).trim()
+      : undefined;
+    const accessToken = request.cookies?.accessToken || headerToken;
+    if (!accessToken) {
+      throw new UnauthorizedException('No access token found');
+    }
+    try {
+      await firstValueFrom(
+        this.httpService.put(`${this.baseUrl}/role`, {
+          headers: {
+            Cookie: `accessToken=${accessToken}`,
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: { userId, role },
+        })
+      );
+    } catch (err) {
+      throw new InternalServerErrorException('Updateing user role failed');
     }
   }
 }

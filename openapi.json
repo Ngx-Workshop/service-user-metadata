@@ -148,6 +148,44 @@
           "User Metadata"
         ]
       }
+    },
+    "/user-metadata/role": {
+      "put": {
+        "operationId": "UserMetadataController_updateRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateUserMetadataDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "User Metadata"
+        ]
+      }
     }
   },
   "info": {
