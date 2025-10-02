@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  Param,
   Patch,
   Post,
   Put,
@@ -27,6 +28,7 @@ import {
   Role,
   Roles,
 } from '@tmdjr/ngx-auth-client';
+import { IsEnum } from 'class-validator';
 import {
   CreateUserMetadataDto,
   PaginatedUserMetadataDto,
@@ -35,6 +37,11 @@ import {
   UserMetadataDto,
 } from './dto/user-metadata.dto';
 import { UserMetadataService } from './user-metadata.service';
+
+export class UpdateRoleDto {
+  @IsEnum(Role)
+  role: Role;
+}
 
 @ApiTags('User Metadata')
 @Controller('user-metadata')
@@ -90,16 +97,19 @@ export class UserMetadataController {
     return this.userMetadataService.findAllPaginated(page, limit);
   }
 
-  @Post('role')
+  @Patch(':userId/role')
   @Roles(Role.Admin)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
   updateRole(
-    @Query('userId') userId: string,
-    @Query('role') role: Role,
+    @Param('userId') userId: string,
+    @Body(new ValidationPipe({ whitelist: true }))
+    dto: UpdateRoleDto,
     @Request() request
   ) {
-    this.logger.log(`Updating role for user ID: ${userId} to role: ${role}`);
-    return this.userMetadataService.updateRole(userId, role, request);
+    this.logger.log(
+      `Updating role for user ID: ${userId} to role: ${dto.role}`
+    );
+    return this.userMetadataService.updateRole(userId, dto.role, request);
   }
 
   @Patch()
