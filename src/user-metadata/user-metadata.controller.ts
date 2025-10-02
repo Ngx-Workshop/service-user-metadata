@@ -90,16 +90,6 @@ export class UserMetadataController {
     return this.userMetadataService.findAllPaginated(page, limit);
   }
 
-  @Patch()
-  @UseGuards(RemoteAuthGuard)
-  @ApiOkResponse({ type: UpdateUserMetadataDto })
-  update(
-    @ActiveUser() user: IActiveUserData,
-    @Body() updateUserMetadataDto: UpdateUserMetadataDto
-  ) {
-    return this.userMetadataService.update(user.sub, updateUserMetadataDto);
-  }
-
   @Patch('role')
   @Roles(Role.Admin)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
@@ -110,6 +100,16 @@ export class UserMetadataController {
   ) {
     this.logger.log(`Updating role for user ID: ${userId} to role: ${role}`);
     return this.userMetadataService.updateRole(userId, role, request);
+  }
+
+  @Patch()
+  @UseGuards(RemoteAuthGuard)
+  @ApiOkResponse({ type: UpdateUserMetadataDto })
+  update(
+    @ActiveUser() user: IActiveUserData,
+    @Body() updateUserMetadataDto: UpdateUserMetadataDto
+  ) {
+    return this.userMetadataService.update(user.sub, updateUserMetadataDto);
   }
 
   @Delete()
