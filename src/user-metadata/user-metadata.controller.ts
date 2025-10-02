@@ -90,7 +90,7 @@ export class UserMetadataController {
     return this.userMetadataService.findAllPaginated(page, limit);
   }
 
-  @Patch('role')
+  @Post('role')
   @Roles(Role.Admin)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
   updateRole(
