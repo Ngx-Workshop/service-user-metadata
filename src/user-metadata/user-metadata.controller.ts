@@ -100,7 +100,7 @@ export class UserMetadataController {
     return this.userMetadataService.update(user.sub, updateUserMetadataDto);
   }
 
-  @Put('role')
+  @Patch('role')
   @Roles(Role.Admin)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
   updateRole(
