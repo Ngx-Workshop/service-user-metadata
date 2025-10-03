@@ -73,7 +73,7 @@ export class UserMetadataController {
   @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UserMetadataDto })
   findOne(@ActiveUser() user: IActiveUserData) {
-    this.logger.log(`Fetching user metadata for user ID: ${user}`);
+    this.logger.log(`Fetching user metadata for user ID: ${user.sub}`);
     return this.userMetadataService.findOne(user);
   }
 
@@ -106,6 +106,9 @@ export class UserMetadataController {
     dto: UpdateRoleDto,
     @Request() request
   ) {
+    this.logger.log(
+      `Updating role for user ID: ${userId} to role: ${dto.role}`
+    );
     return this.userMetadataService.updateRole(userId, dto.role, request);
   }
 

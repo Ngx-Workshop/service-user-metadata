@@ -40,7 +40,6 @@ export class UserMetadataService {
     sub: uuid,
     email,
   }: IActiveUserData): Promise<UserMetadata> {
-    this.logger.debug(`Upserting user metadata for user ID: ${email}`);
     return this.userMetadataModel
       .findOneAndUpdate(
         { uuid },
