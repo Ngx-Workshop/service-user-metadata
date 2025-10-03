@@ -177,9 +177,13 @@ export class UserMetadataService {
     const rawAuth = Array.isArray(request.headers['authorization'])
       ? request.headers['authorization'][0]
       : request.headers['authorization'];
+
+    this.logger.log(`rawAuth: ${rawAuth}`);
     const headerToken = rawAuth?.toString().startsWith('Bearer ')
       ? rawAuth.toString().slice(7).trim()
       : undefined;
+    this.logger.log(`headerToken: ${headerToken}`);
+    this.logger.log(`request.cookies: ${request.cookies}`);
     const accessToken = request.cookies?.accessToken || headerToken;
     if (!accessToken) {
       throw new UnauthorizedException('No access token found');
