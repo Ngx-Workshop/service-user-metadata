@@ -106,9 +106,6 @@ export class UserMetadataController {
     dto: UpdateRoleDto,
     @Request() request
   ) {
-    this.logger.log(
-      `Updating role for user ID: ${userId} to role: ${dto.role}`
-    );
     return this.userMetadataService.updateRole(userId, dto.role, request);
   }
 

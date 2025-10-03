@@ -174,29 +174,25 @@ export class UserMetadataService {
     role: string,
     request: Request
   ): Promise<void> {
-    const rawAuth = Array.isArray(request.headers['authorization'])
-      ? request.headers['authorization'][0]
-      : request.headers['authorization'];
-
-    this.logger.log(`rawAuth: ${rawAuth}`);
-    const headerToken = rawAuth?.toString().startsWith('Bearer ')
-      ? rawAuth.toString().slice(7).trim()
-      : undefined;
-    this.logger.log(`headerToken: ${headerToken}`);
-    this.logger.log(`request.cookies: ${request.cookies}`);
-    const accessToken = request.cookies?.accessToken || headerToken;
+    this.logger.log(`request.cookies: ${JSON.stringify(request.cookies)}`);
+    const accessToken = request.cookies?.accessToken;
+    this.logger.log(`accessToken: ${JSON.stringify(accessToken)}`);
     if (!accessToken) {
       throw new UnauthorizedException('No access token found');
     }
     try {
       await firstValueFrom(
-        this.httpService.put(`${this.baseUrl}/role`, {
-          headers: {
-            Cookie: `accessToken=${accessToken}`,
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: { userId, role },
-        })
+        this.httpService.put(
+          `${this.baseUrl}/role`,
+          { userId, role },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Cookie: `accessToken=${accessToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        )
       );
     } catch (err) {
       this.logger.error(
