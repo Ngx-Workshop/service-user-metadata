@@ -26,7 +26,8 @@ import {
 
 @Injectable()
 export class UserMetadataService {
-  baseUrl = process.env.AUTH_BASE_URL ?? 'https://auth.ngx-workshop.io';
+  private readonly baseUrl =
+    process.env.AUTH_BASE_URL ?? 'https://auth.ngx-workshop.io';
   private readonly logger = new Logger(UserMetadataService.name);
 
   constructor(
@@ -39,6 +40,7 @@ export class UserMetadataService {
     sub: uuid,
     email,
   }: IActiveUserData): Promise<UserMetadata> {
+    this.logger.debug(`Upserting user metadata for user ID: ${email}`);
     return this.userMetadataModel
       .findOneAndUpdate(
         { uuid },
