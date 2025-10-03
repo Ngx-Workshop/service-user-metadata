@@ -174,9 +174,7 @@ export class UserMetadataService {
     role: string,
     request: Request
   ): Promise<void> {
-    this.logger.log(`request.cookies: ${JSON.stringify(request.cookies)}`);
     const accessToken = request.cookies?.accessToken;
-    this.logger.log(`accessToken: ${JSON.stringify(accessToken)}`);
     if (!accessToken) {
       throw new UnauthorizedException('No access token found');
     }
