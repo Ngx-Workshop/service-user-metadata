@@ -122,11 +122,11 @@ export class UserMetadataController {
     return this.userMetadataService.update(user.sub, updateUserMetadataDto);
   }
 
-  @Delete()
+  @Delete(':userId')
   @UseGuards(RemoteAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse()
-  remove(@ActiveUser() user: IActiveUserData) {
-    return this.userMetadataService.remove(user.sub);
+  remove(@Param('userId') userId: string) {
+    return this.userMetadataService.remove(userId);
   }
 }
