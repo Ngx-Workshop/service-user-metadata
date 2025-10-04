@@ -1,4 +1,9 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
 import { Role } from '@tmdjr/ngx-auth-client';
 import { Type } from 'class-transformer';
 import {
@@ -10,6 +15,11 @@ import {
   Max,
   Min,
 } from 'class-validator';
+
+export class UpdateRoleDto {
+  @IsEnum(Role)
+  role: Role;
+}
 
 export class UserMetadataDto {
   @ApiProperty() _id: string;
@@ -47,10 +57,6 @@ export class CreateUserMetadataDto {
   @IsNotEmpty()
   uuid: string;
 
-  @ApiPropertyOptional({ enum: Role })
-  @IsEnum(Role)
-  role?: Role;
-
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
@@ -77,7 +83,9 @@ export class CreateUserMetadataDto {
   description?: string;
 }
 
-export class UpdateUserMetadataDto extends PartialType(CreateUserMetadataDto) {}
+export class UpdateUserMetadataDto extends PartialType(
+  OmitType(CreateUserMetadataDto, ['uuid'] as const)
+) {}
 
 export class PaginationQueryDto {
   @ApiPropertyOptional({ minimum: 1, default: 1 })

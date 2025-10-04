@@ -8,19 +8,13 @@ import {
   Logger,
   Param,
   Patch,
-  Post,
   Put,
   Query,
   Request,
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import {
-  ApiCreatedResponse,
-  ApiNoContentResponse,
-  ApiOkResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   ActiveUser,
   IActiveUserData,
@@ -28,20 +22,14 @@ import {
   Role,
   Roles,
 } from '@tmdjr/ngx-auth-client';
-import { IsEnum } from 'class-validator';
 import {
-  CreateUserMetadataDto,
   PaginatedUserMetadataDto,
   PaginationQueryDto,
+  UpdateRoleDto,
   UpdateUserMetadataDto,
   UserMetadataDto,
 } from './dto/user-metadata.dto';
 import { UserMetadataService } from './user-metadata.service';
-
-export class UpdateRoleDto {
-  @IsEnum(Role)
-  role: Role;
-}
 
 @ApiTags('User Metadata')
 @Controller('user-metadata')
@@ -52,21 +40,11 @@ export class UserMetadataController {
 
   @Put()
   @UseGuards(RemoteAuthGuard)
-  @ApiOkResponse({ type: UserMetadataDto })
-  async upsertByUserId(
-    @ActiveUser() user: IActiveUserData,
-    @Body() dto: Partial<CreateUserMetadataDto>
-  ) {
+  @ApiOkResponse({ description: 'User metadata upserted successfully' })
+  @HttpCode(HttpStatus.OK)
+  async upsertByUserId(@ActiveUser() user: IActiveUserData) {
     await this.userMetadataService.upsertByUuid(user);
     this.logger.log(`Upserted user metadata for user ID: ${user.sub}`);
-    return { user, ...dto };
-  }
-
-  @Post()
-  @UseGuards(RemoteAuthGuard)
-  @ApiCreatedResponse({ type: CreateUserMetadataDto })
-  create(@Body() createUserMetadataDto: CreateUserMetadataDto) {
-    return this.userMetadataService.create(createUserMetadataDto);
   }
 
   @Get()
@@ -112,6 +90,18 @@ export class UserMetadataController {
     return this.userMetadataService.updateRole(userId, dto.role, request);
   }
 
+  @Patch(':userId/admin-override')
+  @Roles(Role.Admin)
+  @ApiOkResponse({ type: UpdateUserMetadataDto })
+  updateUserMetadataRole(
+    @Param('userId') userId: string,
+    @Body(new ValidationPipe({ whitelist: true }))
+    updateUserMetadataDto: UpdateUserMetadataDto
+  ) {
+    this.logger.log(`Admin is updating user metadata for user ID: ${userId}`);
+    return this.userMetadataService.update(userId, updateUserMetadataDto);
+  }
+
   @Patch()
   @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
@@ -119,6 +109,7 @@ export class UserMetadataController {
     @ActiveUser() user: IActiveUserData,
     @Body() updateUserMetadataDto: UpdateUserMetadataDto
   ) {
+    this.logger.log(`User is updating user metadata for user ID: ${user.sub}`);
     return this.userMetadataService.update(user.sub, updateUserMetadataDto);
   }
 
