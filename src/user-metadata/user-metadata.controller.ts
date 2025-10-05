@@ -11,14 +11,12 @@ import {
   Put,
   Query,
   Request,
-  UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import {
   ActiveUser,
   IActiveUserData,
-  RemoteAuthGuard,
   Role,
   Roles,
 } from '@tmdjr/ngx-auth-client';
@@ -39,7 +37,6 @@ export class UserMetadataController {
   constructor(private readonly userMetadataService: UserMetadataService) {}
 
   @Put()
-  @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ description: 'User metadata upserted successfully' })
   @HttpCode(HttpStatus.OK)
   async upsertByUserId(@ActiveUser() user: IActiveUserData) {
@@ -48,7 +45,6 @@ export class UserMetadataController {
   }
 
   @Get()
-  @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UserMetadataDto })
   findOne(@ActiveUser() user: IActiveUserData) {
     this.logger.log(`Fetching user metadata for user ID: ${user.sub}`);
@@ -103,7 +99,6 @@ export class UserMetadataController {
   }
 
   @Patch()
-  @UseGuards(RemoteAuthGuard)
   @ApiOkResponse({ type: UpdateUserMetadataDto })
   update(
     @ActiveUser() user: IActiveUserData,
@@ -114,7 +109,7 @@ export class UserMetadataController {
   }
 
   @Delete(':userId')
-  @UseGuards(RemoteAuthGuard)
+  @Roles(Role.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse()
   remove(@Param('userId') userId: string) {
