@@ -22,7 +22,7 @@ import {
 } from '@tmdjr/ngx-auth-client';
 import {
   PaginatedUserMetadataDto,
-  PaginationQueryDto,
+  SearchUserMetadataQueryDto,
   UpdateRoleDto,
   UpdateUserMetadataDto,
   UserMetadataDto,
@@ -62,13 +62,15 @@ export class UserMetadataController {
         forbidNonWhitelisted: true,
       })
     )
-    paginationQuery: PaginationQueryDto
+    paginationQuery: SearchUserMetadataQueryDto
   ) {
-    const { page, limit } = paginationQuery;
+    const { page, limit, query, role } = paginationQuery;
     this.logger.log(
-      `Fetching paginated user metadata with page=${page}, limit=${limit}`
+      `Fetching paginated user metadata with page=${page}, limit=${limit}, query="${
+        query ?? ''
+      }", role=${role ?? 'any'}`
     );
-    return this.userMetadataService.findAllPaginated(page, limit);
+    return this.userMetadataService.findAllPaginated(page, limit, query, role);
   }
 
   @Patch(':userId/role')

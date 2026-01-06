@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { IActiveUserData } from '@tmdjr/ngx-auth-client';
+import { IActiveUserData, Role } from '@tmdjr/ngx-auth-client';
 import { plainToInstance } from 'class-transformer';
 import { Request } from 'express';
 import { Model } from 'mongoose';
@@ -112,21 +112,39 @@ export class UserMetadataService {
 
   async findAllPaginated(
     page: number,
-    limit: number
+    limit: number,
+    query?: string,
+    role?: Role
   ): Promise<PaginatedUserMetadataDto> {
     const safeLimit = Math.min(Math.max(limit, 1), 100);
     const safePage = Math.max(page, 1);
     const skip = (safePage - 1) * safeLimit;
 
+    const filters: Record<string, unknown> = {};
+    if (role) {
+      filters.role = role;
+    }
+
+    if (query?.trim()) {
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedQuery, 'i');
+      filters.$or = [
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { email: searchRegex },
+        { uuid: searchRegex },
+      ];
+    }
+
     const [data, total] = await Promise.all([
       this.userMetadataModel
-        .find()
+        .find(filters)
         .sort({ _id: -1 })
         .skip(skip)
         .limit(safeLimit)
         .lean()
         .exec(),
-      this.userMetadataModel.countDocuments().exec(),
+      this.userMetadataModel.countDocuments(filters).exec(),
     ]);
 
     const totalPages = Math.max(Math.ceil(total / safeLimit), 1);

@@ -118,3 +118,17 @@ export class PaginatedUserMetadataDto {
   @ApiProperty()
   totalPages: number;
 }
+
+export class SearchUserMetadataQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    description: 'Search by first name, last name, uuid or email',
+  })
+  @IsString()
+  @IsOptional()
+  query?: string;
+
+  @ApiPropertyOptional({ enum: Role, description: 'Filter by user role' })
+  @IsEnum(Role)
+  @IsOptional()
+  role?: Role;
+}
