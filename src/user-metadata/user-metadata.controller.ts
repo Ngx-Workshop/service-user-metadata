@@ -51,6 +51,14 @@ export class UserMetadataController {
     return this.userMetadataService.findOne(user);
   }
 
+  @Get(':userId/find-one')
+  @Roles(Role.Admin)
+  @ApiOkResponse({ type: UserMetadataDto })
+  findOneAdmin(@Param('userId') userId: string) {
+    this.logger.log(`Fetching user metadata for user ID: ${userId} by admin`);
+    return this.userMetadataService.findOneAdmin(userId);
+  }
+
   @Get('all')
   @Roles(Role.Admin)
   @ApiOkResponse({ type: PaginatedUserMetadataDto })

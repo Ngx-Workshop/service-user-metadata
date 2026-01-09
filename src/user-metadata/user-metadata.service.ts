@@ -82,6 +82,14 @@ export class UserMetadataService {
     return this.upsertByUuid(user);
   }
 
+  async findOneAdmin(uuid: string): Promise<UserMetadata> {
+    const userMetadata = await this.userMetadataModel.findOne({ uuid }).exec();
+    if (!userMetadata) {
+      throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);
+    }
+    return userMetadata;
+  }
+
   async update(
     uuid: string,
     updateUserMetadataDto: UpdateUserMetadataDto
