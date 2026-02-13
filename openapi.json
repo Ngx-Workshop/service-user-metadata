@@ -7,43 +7,7 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserMetadataDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "User Metadata"
-        ]
-      },
-      "post": {
-        "operationId": "UserMetadataController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateUserMetadataDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateUserMetadataDto"
-                }
-              }
-            }
+            "description": "User metadata upserted successfully"
           }
         },
         "tags": [
@@ -97,13 +61,31 @@
         "tags": [
           "User Metadata"
         ]
-      },
-      "delete": {
-        "operationId": "UserMetadataController_remove",
-        "parameters": [],
+      }
+    },
+    "/user-metadata/{userId}/find-one": {
+      "get": {
+        "operationId": "UserMetadataController_findOneAdmin",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "204": {
-            "description": ""
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMetadataDto"
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -130,6 +112,29 @@
             "schema": {
               "$ref": "#/components/schemas/Object"
             }
+          },
+          {
+            "name": "query",
+            "required": false,
+            "in": "query",
+            "description": "Search by first name, last name, uuid or email",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "Filter by user role",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "regular",
+                "publisher",
+                "admin"
+              ]
+            }
           }
         ],
         "responses": {
@@ -149,27 +154,29 @@
         ]
       }
     },
-    "/user-metadata/role": {
-      "put": {
+    "/user-metadata/{userId}/role": {
+      "patch": {
         "operationId": "UserMetadataController_updateRole",
         "parameters": [
           {
             "name": "userId",
             "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "role",
-            "required": true,
-            "in": "query",
+            "in": "path",
             "schema": {
               "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "",
@@ -180,6 +187,69 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "User Metadata"
+        ]
+      }
+    },
+    "/user-metadata/{userId}/admin-override": {
+      "patch": {
+        "operationId": "UserMetadataController_updateUserMetadataRole",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserMetadataDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateUserMetadataDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "User Metadata"
+        ]
+      }
+    },
+    "/user-metadata/{userId}": {
+      "delete": {
+        "operationId": "UserMetadataController_remove",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
           }
         },
         "tags": [
@@ -242,41 +312,6 @@
           "__v"
         ]
       },
-      "CreateUserMetadataDto": {
-        "type": "object",
-        "properties": {
-          "uuid": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "regular",
-              "publisher",
-              "admin"
-            ]
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "avatarUrl": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string",
-            "default": "No description provided"
-          }
-        },
-        "required": [
-          "uuid"
-        ]
-      },
       "Object": {
         "type": "object",
         "properties": {}
@@ -311,20 +346,13 @@
           "totalPages"
         ]
       },
+      "UpdateRoleDto": {
+        "type": "object",
+        "properties": {}
+      },
       "UpdateUserMetadataDto": {
         "type": "object",
         "properties": {
-          "uuid": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "regular",
-              "publisher",
-              "admin"
-            ]
-          },
           "firstName": {
             "type": "string"
           },
