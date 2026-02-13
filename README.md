@@ -1,6 +1,7 @@
 # <img src="https://github.com/Ngx-Workshop/.github/blob/main/readme-assets/devicon-nestjs-line.svg?raw=true" height="84" alt="Nest Logo" /> <img src="https://github.com/Ngx-Workshop/.github/blob/main/readme-assets/mongodb-logo.svg?raw=true" height="20" alt="MongoDB Logo" /> User Metadata API
 
 NestJS service for storing and managing user profile metadata (name, avatar, role, description, etc.) backed by MongoDB.
+[![npm version](https://badge.fury.io/js/@tmdjr%2Fuser-metadata-contracts.svg)](https://badge.fury.io/js/@tmdjr%2Fuser-metadata-contracts)
 
 ## What this service does
 
