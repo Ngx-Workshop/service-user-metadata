@@ -1,0 +1,3 @@
+[submodule "cli-ngx-workshop"]
+	path = cli-ngx-workshop
+	url = https://github.com/Ngx-Workshop/cli-ngx-workshop.git
