@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build
+RUN GENERATE_OPENAPI=true npm run build
 
 EXPOSE 3004
 CMD ["node", "dist/main.js"]
