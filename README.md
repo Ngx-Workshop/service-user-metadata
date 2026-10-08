@@ -33,9 +33,17 @@ Create a `.env` file in the project root.
 | `MONGODB_URI`      | Yes (runtime) | -                              | MongoDB connection string                                     |
 | `PORT`             |            No | `3004`                         | HTTP port                                                     |
 | `AUTH_BASE_URL`    |            No | `https://auth.ngx-workshop.io` | Auth service base URL used when propagating role changes      |
+| `USER_METADATA_LOCAL_DEV` | No | `false` | Explicit isolated local mode; requires development and fixed local database |
 | `GENERATE_OPENAPI` |            No | `false`                        | Internal flag used by OpenAPI generation to disable DB wiring |
 
-## Run locally
+## Isolated development with the admin MFE
+
+See [local development](docs/local-development.md). Run `npm run seed:local` and
+`npm run start:local` with MongoDB on loopback. This uses only `user_metadata_local`,
+synthetic users, approved shell CORS, and no hosted auth role synchronization.
+`npm run test:local:http` verifies the local HTTP/Mongo journey.
+
+## Run with normal authentication
 
 ```bash
 npm ci
@@ -104,7 +112,8 @@ Base route: `/user-metadata`
 
 ## Auth and authorization
 
-- `AuthenticationGuard` is applied globally in the module.
+- `UserMetadataAuthGuard` delegates to the platform `AuthenticationGuard` normally;
+  explicit isolated local mode supplies the synthetic admin identity.
 - `RolesGuard` is applied globally in the module.
 - Admin routes use `@Roles(Role.Admin)`.
 - Role propagation (`PATCH /:userId/role`) expects `accessToken` cookie and calls:

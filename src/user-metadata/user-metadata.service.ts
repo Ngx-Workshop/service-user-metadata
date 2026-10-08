@@ -1,3 +1,7 @@
+import {
+  assertLocalDatabase,
+  localMode,
+} from '../local-development/local-development';
 import { HttpService } from '@nestjs/axios';
 import {
   ConflictException,
@@ -192,7 +196,7 @@ export class UserMetadataService {
       throw new NotFoundException(`UserMetadata with ID "${userId}" not found`);
     }
 
-    void this.updateUserRole(userId, role, request);
+    if (!localMode()) void this.updateUserRole(userId, role, request);
     return updatedUserMetadata;
   }
 
@@ -201,6 +205,10 @@ export class UserMetadataService {
     role: string,
     request: Request
   ): Promise<void> {
+    if (localMode()) {
+      assertLocalDatabase();
+      return;
+    }
     const accessToken = request.cookies?.accessToken;
     if (!accessToken) {
       throw new UnauthorizedException('No access token found');

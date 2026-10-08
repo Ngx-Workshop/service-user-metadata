@@ -1,9 +1,9 @@
+import { UserMetadataAuthGuard } from '../local-development/user-metadata-auth.guard';
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import {
-  AuthenticationGuard,
   NgxAuthClientModule,
   RemoteAuthGuard,
   RolesGuard,
@@ -32,10 +32,10 @@ const FAKE_PROVIDERS =
           // Minimal fake the service can accept; if service calls methods during generation (it shouldn't), add no-op fns
           useValue: {
             // common Mongoose methods we might accidentally touch
-            find: () => ({ exec: async () => [] }),
-            findById: () => ({ exec: async () => null }),
-            findByIdAndUpdate: () => ({ exec: async () => null }),
-            findOne: () => ({ exec: async () => null }),
+            find: () => ({ exec: () => Promise.resolve([]) }),
+            findById: () => ({ exec: () => Promise.resolve(null) }),
+            findByIdAndUpdate: () => ({ exec: () => Promise.resolve(null) }),
+            findOne: () => ({ exec: () => Promise.resolve(null) }),
           },
         },
         {
@@ -52,7 +52,7 @@ const FAKE_PROVIDERS =
     UserMetadataService,
     {
       provide: APP_GUARD,
-      useClass: AuthenticationGuard,
+      useClass: UserMetadataAuthGuard,
     },
     {
       provide: APP_GUARD,
