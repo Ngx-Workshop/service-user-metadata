@@ -1,6 +1,7 @@
 export const localDatabaseUri = 'mongodb://127.0.0.1:27017/user_metadata_local';
 export const localOrigins = [
   'https://admin.ngx-workshop.io',
+  'https://beta.ngx-workshop.io',
   'http://localhost:4201',
   'http://127.0.0.1:4201',
 ];

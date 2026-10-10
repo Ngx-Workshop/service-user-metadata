@@ -1,3 +1,9 @@
+import {
+  WorkshopProgress,
+  WorkshopProgressSchema,
+} from '../workshop-progress/workshop-progress.schema';
+import { WorkshopProgressService } from '../workshop-progress/workshop-progress.service';
+import { WorkshopProgressController } from '../workshop-progress/workshop-progress.controller';
 import { UserMetadataAuthGuard } from '../local-development/user-metadata-auth.guard';
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
@@ -21,12 +27,14 @@ const SCHEMA_IMPORTS =
     : [
         MongooseModule.forFeature([
           { name: UserMetadata.name, schema: UserMetadataSchema },
+          { name: WorkshopProgress.name, schema: WorkshopProgressSchema },
         ]),
       ];
 // When generating OpenAPI, stub out the Mongoose model and the guard
 const FAKE_PROVIDERS =
   process.env.GENERATE_OPENAPI === 'true'
     ? [
+        { provide: getModelToken(WorkshopProgress.name), useValue: {} },
         {
           provide: getModelToken(UserMetadata.name),
           // Minimal fake the service can accept; if service calls methods during generation (it shouldn't), add no-op fns
@@ -47,9 +55,10 @@ const FAKE_PROVIDERS =
     : [];
 @Module({
   imports: [HttpModule, NgxAuthClientModule, ...SCHEMA_IMPORTS],
-  controllers: [UserMetadataController],
+  controllers: [UserMetadataController, WorkshopProgressController],
   providers: [
     UserMetadataService,
+    WorkshopProgressService,
     {
       provide: APP_GUARD,
       useClass: UserMetadataAuthGuard,

@@ -256,6 +256,186 @@
           "User Metadata"
         ]
       }
+    },
+    "/user-metadata/workshop-progress": {
+      "get": {
+        "operationId": "WorkshopProgressController_catalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkshopProgressDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
+    },
+    "/user-metadata/workshop-progress/workshops/{id}/start": {
+      "post": {
+        "operationId": "WorkshopProgressController_start",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkshopProgressDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
+    },
+    "/user-metadata/workshop-progress/workshops/{id}/complete": {
+      "post": {
+        "operationId": "WorkshopProgressController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkshopProgressDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
+    },
+    "/user-metadata/workshop-progress/workshops/{id}/pages/{pageId}": {
+      "get": {
+        "operationId": "WorkshopProgressController_page",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkshopReadingDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
+    },
+    "/user-metadata/workshop-progress/example-reset": {
+      "post": {
+        "operationId": "WorkshopProgressController_resetExample",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkshopProgressDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
+    },
+    "/user-metadata/workshop-progress/example-assessments/{sectionId}": {
+      "post": {
+        "operationId": "WorkshopProgressController_sampleAssessment",
+        "parameters": [
+          {
+            "name": "sectionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoAssessmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoAssessmentResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
     }
   },
   "info": {
@@ -370,6 +550,198 @@
             "default": "No description provided"
           }
         }
+      },
+      "JourneyEntryDto": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PAGE",
+              "ASSESSMENT_TEST",
+              "CODING_LAB"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortId": {
+            "type": "number"
+          },
+          "resourceId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "_id",
+          "kind",
+          "name",
+          "sortId"
+        ]
+      },
+      "EligibleWorkshopDto": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "sectionId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "level": {
+            "type": "number"
+          },
+          "sortId": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "in-progress",
+              "completed"
+            ]
+          },
+          "workshopDocuments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JourneyEntryDto"
+            }
+          }
+        },
+        "required": [
+          "_id",
+          "sectionId",
+          "name",
+          "summary",
+          "level",
+          "sortId",
+          "status",
+          "workshopDocuments"
+        ]
+      },
+      "WorkshopSectionProgressDto": {
+        "type": "object",
+        "properties": {
+          "sectionId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "assessmentCompleted": {
+            "type": "boolean"
+          },
+          "assessmentAvailable": {
+            "type": "boolean"
+          },
+          "unlockedLevel": {
+            "type": "number"
+          },
+          "totalCount": {
+            "type": "number"
+          },
+          "completedCount": {
+            "type": "number"
+          },
+          "lockedCount": {
+            "type": "number"
+          },
+          "workshops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibleWorkshopDto"
+            }
+          }
+        },
+        "required": [
+          "sectionId",
+          "title",
+          "description",
+          "assessmentCompleted",
+          "assessmentAvailable",
+          "unlockedLevel",
+          "totalCount",
+          "completedCount",
+          "lockedCount",
+          "workshops"
+        ]
+      },
+      "WorkshopProgressDto": {
+        "type": "object",
+        "properties": {
+          "demo": {
+            "type": "boolean"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkshopSectionProgressDto"
+            }
+          }
+        },
+        "required": [
+          "demo",
+          "sections"
+        ]
+      },
+      "WorkshopReadingDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string",
+            "description": "Serialized document blocks; render as sanitized content"
+          }
+        },
+        "required": [
+          "name",
+          "html"
+        ]
+      },
+      "DemoAssessmentDto": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "enum": [
+              "component",
+              "database"
+            ]
+          }
+        },
+        "required": [
+          "answer"
+        ]
+      },
+      "DemoAssessmentResultDto": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "catalog": {
+            "$ref": "#/components/schemas/WorkshopProgressDto"
+          }
+        },
+        "required": [
+          "correct",
+          "catalog"
+        ]
       }
     }
   }

@@ -169,3 +169,7 @@ npm run test:e2e
 
 - OpenAPI output in `openapi.json` depends on current compiled output and generation timing; regenerate after endpoint changes.
 - Existing e2e scaffold may not reflect the current route structure and may require updating before using as a regression suite.
+
+## Workshop progression
+
+See [the workshop progression guide](docs/workshop-progression.md) for the separate learning-state collection, authenticated eligibility API, local example, verification, and live integration configuration.
