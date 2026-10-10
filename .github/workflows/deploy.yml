@@ -115,6 +115,8 @@ jobs:
           PORT: ${{ secrets.PORT }}
           AUTH_BASE_URL: ${{ secrets.AUTH_BASE_URL }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          DOCKER_NET_NAME_DOCUMENT: ${{ secrets.DOCKER_NET_NAME_DOCUMENT }}
+          DOCKER_NET_NAME_ASSESSMENT: ${{ secrets.DOCKER_NET_NAME_ASSESSMENT }}
           SSH_HOST_FINGERPRINT: ${{ secrets.SSH_HOST_FINGERPRINT }}
         run: |
           set -euo pipefail
@@ -125,7 +127,10 @@ jobs:
           from pathlib import Path
           from urllib.parse import urlsplit, parse_qs
 
-          names = ("PORT", "AUTH_BASE_URL", "MONGODB_URI")
+          names = (
+              "PORT", "AUTH_BASE_URL", "MONGODB_URI",
+              "DOCKER_NET_NAME_DOCUMENT", "DOCKER_NET_NAME_ASSESSMENT",
+          )
           for name in (*names, "SSH_HOST_FINGERPRINT"):
               value = os.environ.get(name, "")
               if not value or any(c in value for c in ("\r", "\n", "\0")):
@@ -150,6 +155,25 @@ jobs:
 
           if not valid:
               raise SystemExit("MONGODB_URI does not match the restored private database")
+
+          for name in ("DOCKER_NET_NAME_DOCUMENT", "DOCKER_NET_NAME_ASSESSMENT"):
+              try:
+                  upstream = urlsplit(os.environ[name])
+                  valid_upstream = (
+                      upstream.scheme in ("http", "https")
+                      and bool(upstream.hostname)
+                      and bool(upstream.netloc)
+                      and upstream.username is None
+                      and upstream.password is None
+                      and not upstream.query
+                      and not upstream.fragment
+                      and not any(c.isspace() for c in os.environ[name])
+                  )
+                  upstream.port  # Validate malformed port numbers before deployment.
+              except ValueError:
+                  valid_upstream = False
+              if not valid_upstream:
+                  raise SystemExit(f"{name} must be an HTTP(S) base URL without credentials, query or fragment")
 
           path = Path(".env.next")
           path.write_text(

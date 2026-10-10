@@ -104,12 +104,12 @@ export class WorkshopProgressService {
       };
     const [sectionMap, assessments] = await Promise.all([
       this.get<{ sections: Record<string, SectionSource> }>(
-        'WORKSHOP_DOCUMENT_API_URL',
+        'DOCKER_NET_NAME_DOCUMENT',
         'navigation/sections',
         request
       ),
       this.get<AssessmentSource[]>(
-        'WORKSHOP_ASSESSMENT_API_URL',
+        'DOCKER_NET_NAME_ASSESSMENT',
         'assessment-test/learner/catalog',
         request
       ),
@@ -119,7 +119,7 @@ export class WorkshopProgressService {
       await Promise.all(
         sections.map((s) =>
           this.get<WorkshopSource[]>(
-            'WORKSHOP_DOCUMENT_API_URL',
+            'DOCKER_NET_NAME_DOCUMENT',
             `navigation/workshops?section=${encodeURIComponent(s._id)}`,
             request
           )
@@ -211,7 +211,7 @@ export class WorkshopProgressService {
       return page;
     }
     return this.get<WorkshopReadingDto>(
-      'WORKSHOP_DOCUMENT_API_URL',
+      'DOCKER_NET_NAME_DOCUMENT',
       `workshop/${encodeURIComponent(pageId)}`,
       request
     );

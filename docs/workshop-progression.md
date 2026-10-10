@@ -30,8 +30,8 @@ https://beta.ngx-workshop.io/workshops/hello-world?workshopExample=local
 
 ## Live configuration and delivery
 Unset WORKSHOP_PROGRESS_DEMO and USER_METADATA_LOCAL_DEV. Configure trusted server API prefixes (include /api if using a gateway):
-- WORKSHOP_DOCUMENT_API_URL: base for navigation/sections, navigation/workshops?section=ID, workshop/:pageId.
-- WORKSHOP_ASSESSMENT_API_URL: base for assessment-test/learner/catalog.
+- DOCKER_NET_NAME_DOCUMENT: base for navigation/sections, navigation/workshops?section=ID, workshop/:pageId.
+- DOCKER_NET_NAME_ASSESSMENT: base for assessment-test/learner/catalog.
 
 Only incoming Cookie and Authorization are forwarded. Missing configuration or upstream failure returns 503; eligibility fails closed. Existing gateway must forward the user-metadata prefix with cookies/auth intact. Deploy this service before relying on the live remote catalog. Initial live tests are taken in the existing assessment journey; returning to workshops and refreshing consumes the authoritative results.
 
@@ -41,3 +41,29 @@ Generate with `GENERATE_OPENAPI=true npm run build`, then contracts:service-user
 Service tests: 35 passed across four suites. Remote tests: 22 ChromeHeadless tests passed. Backend build, generated contract build and real local HTTP/Mongo verifier passed. Hosted beta shell loaded the rebuilt local remote; sample assessment → level 1 → two completions → level 2 was observed. Live account integration remains pending service deployment/upstream configuration.
 
 Standalone example (no hosted sign-in needed): http://localhost:4201/?workshopExample=local
+
+
+## Deployment settings and Docker network check
+The token names are DOCKER_NET_NAME_DOCUMENT and DOCKER_NET_NAME_ASSESSMENT; values remain complete HTTP base URLs, including the container port:
+
+```env
+DOCKER_NET_NAME_DOCUMENT=http://document:3007
+DOCKER_NET_NAME_ASSESSMENT=http://service-nestjs-assessment-test:3005
+```
+
+Set both as GitHub Actions secrets for service-user-metadata. The deployment workflow validates them, writes them into the protected runtime .env and recreates the container using that file. Former WORKSHOP_DOCUMENT_API_URL/WORKSHOP_ASSESSMENT_API_URL names are no longer read. Direct container connections do not use an /api prefix.
+
+On the Docker host, list members of the shared user-defined network:
+
+```sh
+docker network inspect ngx-net --format '{{range .Containers}}{{println .Name}}{{end}}'
+```
+
+The output must include service-user-metadata, document and service-nestjs-assessment-test. If either dependency is missing, attach it with the applicable command:
+
+```sh
+docker network connect ngx-net document
+docker network connect ngx-net service-nestjs-assessment-test
+```
+
+The deployment already creates the metadata container with --network ngx-net. This change updates local deployment configuration; no remote deployment or Docker network mutation was performed from the workspace.

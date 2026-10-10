@@ -103,8 +103,8 @@ describe('Workshop progress commands', () => {
   });
   it('uses exact section IDs and authenticated upstream assessment results in live mode', async () => {
     process.env.WORKSHOP_PROGRESS_DEMO = 'false';
-    process.env.WORKSHOP_DOCUMENT_API_URL = 'http://document.invalid/api';
-    process.env.WORKSHOP_ASSESSMENT_API_URL = 'http://assessment.invalid/api';
+    process.env.DOCKER_NET_NAME_DOCUMENT = 'http://document.invalid/api';
+    process.env.DOCKER_NET_NAME_ASSESSMENT = 'http://assessment.invalid/api';
     http.get.mockImplementation((url: string) =>
       of({
         data: url.endsWith('navigation/sections')
