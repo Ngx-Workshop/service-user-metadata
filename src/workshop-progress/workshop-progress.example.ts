@@ -18,7 +18,7 @@ export const exampleWorkshops: WorkshopSource[] = [
     _id: 'example-components',
     sectionId: 'example-angular',
     name: 'Your first component',
-    summary: 'Read the lesson and confirm completion.',
+    summary: 'Read both lessons and complete the workshop assessment.',
     level: 1,
     sortId: 0,
     workshopDocuments: [
@@ -27,6 +27,19 @@ export const exampleWorkshops: WorkshopSource[] = [
         kind: 'PAGE',
         name: 'Components',
         sortId: 0,
+      },
+      {
+        _id: 'example-components-practice',
+        kind: 'PAGE',
+        name: 'Practice',
+        sortId: 1,
+      },
+      {
+        _id: 'example-components-assessment',
+        kind: 'ASSESSMENT_TEST',
+        resourceId: 'example-components-test',
+        name: 'Component assessment',
+        sortId: 2,
       },
     ],
   },
@@ -75,9 +88,13 @@ export const exampleWorkshops: WorkshopSource[] = [
   },
 ];
 export const examplePages: Record<string, { name: string; html: string }> = {
+  'example-components-practice': {
+    name: 'Practice',
+    html: '<h2>Component practice</h2><p>Change the greeting to include your name. Then complete the component assessment.</p>',
+  },
   'example-components-page': {
     name: 'Components',
-    html: '<h2>Your first component</h2><p>A component combines a TypeScript class, a template, and styles. A standalone component declares the dependencies its template uses.</p><pre>@Component({ selector: "hello-world", template: "Hello!" })\nexport class HelloWorld {}</pre><p>Exercise: change the greeting to include your name. When you have finished, confirm that you completed the workshop.</p>',
+    html: '<h2>Your first component</h2><p>A component combines a TypeScript class, a template, and styles. A standalone component declares the dependencies its template uses.</p><pre>@Component({ selector: "hello-world", template: "Hello!" })\nexport class HelloWorld {}</pre><p>Exercise: change the greeting to include your name. Read the practice page, then complete the component assessment.</p>',
   },
   'example-templates-page': {
     name: 'Templates',

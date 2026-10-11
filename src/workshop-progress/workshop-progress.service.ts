@@ -86,7 +86,9 @@ export class WorkshopProgressService {
       uuid,
       startedWorkshopIds: [],
       completedWorkshopIds: [],
+      viewedPages: [],
       demoAssessmentSections: [],
+      demoCompletedAssessmentIds: [],
     };
     if (this.demo())
       return {
@@ -99,7 +101,26 @@ export class WorkshopProgressService {
             ? 1
             : 0,
           highestPassedLevel: 0,
-          tests: [{ status: 'available' }],
+          tests: [
+            {
+              id: `${s._id}-initial`,
+              status: progress.demoAssessmentSections.includes(s._id)
+                ? 'completed'
+                : 'available',
+            },
+            ...(s._id === 'example-angular'
+              ? [
+                  {
+                    id: 'example-components-test',
+                    status: (
+                      progress.demoCompletedAssessmentIds ?? []
+                    ).includes('example-components-test')
+                      ? 'completed'
+                      : 'available',
+                  },
+                ]
+              : []),
+          ],
         })),
       };
     const [sectionMap, assessments] = await Promise.all([
@@ -141,7 +162,8 @@ export class WorkshopProgressService {
           section,
           workshops,
           assessments.find((a) => a.subject === section._id),
-          progress
+          progress,
+          assessments
         )
       ),
     };
@@ -175,19 +197,14 @@ export class WorkshopProgressService {
   }
 
   async complete(uuid: string, id: string, request: Request) {
-    await this.eligible(uuid, id, request);
+    const workshop = await this.eligible(uuid, id, request);
     const record = await this.progress.findOne({ uuid }).lean().exec();
     if (!record?.startedWorkshopIds.includes(id))
+      throw new ForbiddenException('Start the workshop before completing it');
+    if (workshop.status !== 'completed')
       throw new ForbiddenException(
-        'Start the workshop before confirming completion'
+        'View every workshop page and complete its assessments first'
       );
-    await this.progress
-      .updateOne(
-        { uuid },
-        { $addToSet: { completedWorkshopIds: id } },
-        { runValidators: true }
-      )
-      .exec();
     return this.catalog(uuid, request);
   }
 
@@ -217,6 +234,24 @@ export class WorkshopProgressService {
     );
   }
 
+  async seen(uuid: string, id: string, pageId: string, request: Request) {
+    const record = await this.progress.findOne({ uuid }).lean().exec();
+    if (!record?.startedWorkshopIds.includes(id))
+      throw new ForbiddenException(
+        'Start the workshop before viewing its pages'
+      );
+    // Check ownership, eligibility and successful content retrieval before accepting a visit.
+    await this.page(uuid, id, pageId, request);
+    await this.progress
+      .updateOne(
+        { uuid },
+        { $addToSet: { viewedPages: { workshopId: id, pageId } } },
+        { runValidators: true }
+      )
+      .exec();
+    return this.catalog(uuid, request);
+  }
+
   async resetExample(uuid: string) {
     if (!this.demo()) throw new NotFoundException();
     await this.progress.deleteOne({ uuid }).exec();
@@ -235,6 +270,36 @@ export class WorkshopProgressService {
           { startedWorkshopIds: [], completedWorkshopIds: [] }
         )
       ),
+    };
+  }
+
+  async sampleWorkshopAssessment(
+    uuid: string,
+    testId: string,
+    answer: string,
+    request: Request
+  ) {
+    if (!this.demo()) throw new NotFoundException();
+    const owner = exampleWorkshops.find((w) =>
+      w.workshopDocuments.some(
+        (p) => p.kind === 'ASSESSMENT_TEST' && p.resourceId === testId
+      )
+    );
+    if (!owner) throw new NotFoundException('Example assessment not found');
+    await this.eligible(uuid, owner._id, request);
+    const record = await this.progress.findOne({ uuid }).lean().exec();
+    if (!record?.startedWorkshopIds.includes(owner._id))
+      throw new ForbiddenException('Start the workshop first');
+    await this.progress
+      .updateOne(
+        { uuid },
+        { $addToSet: { demoCompletedAssessmentIds: testId } },
+        { runValidators: true }
+      )
+      .exec();
+    return {
+      correct: answer === 'component',
+      catalog: await this.catalog(uuid, request),
     };
   }
 

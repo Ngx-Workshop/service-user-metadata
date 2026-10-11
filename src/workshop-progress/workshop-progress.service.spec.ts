@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Request } from 'express';
 import { Model } from 'mongoose';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { WorkshopProgressService } from './workshop-progress.service';
 import { WorkshopProgress } from './workshop-progress.schema';
 import { localDatabaseUri } from '../local-development/local-development';
@@ -29,13 +29,22 @@ describe('Workshop progress commands', () => {
       startedWorkshopIds: [],
       completedWorkshopIds: [],
       demoAssessmentSections: [],
+      demoCompletedAssessmentIds: [],
+      viewedPages: [],
     };
     model.findOne.mockImplementation(() => ({
       lean: () => ({ exec: async () => record }),
     }));
-    model.updateOne.mockReturnValue({
-      exec: async () => ({ acknowledged: true }),
-    });
+    model.updateOne.mockImplementation((_filter, update) => ({
+      exec: async () => {
+        for (const [key, value] of Object.entries(update.$addToSet ?? {})) {
+          const values = record[key as keyof WorkshopProgress] as unknown[];
+          if (!values.some((v) => JSON.stringify(v) === JSON.stringify(value)))
+            values.push(value);
+        }
+        return { acknowledged: true };
+      },
+    }));
     service = new WorkshopProgressService(
       model as unknown as Model<WorkshopProgress>,
       http as unknown as HttpService
@@ -70,24 +79,94 @@ describe('Workshop progress commands', () => {
       { upsert: true, runValidators: true }
     );
   });
-  it('makes duplicate completion idempotent and checks the page belongs to the workshop', async () => {
+  it('rejects completion without every page and the exact assessment, and makes repeat visits idempotent', async () => {
     record.demoAssessmentSections = ['example-angular'];
     record.startedWorkshopIds = ['example-components'];
-    record.completedWorkshopIds = ['example-components'];
-    await service.complete('learner', 'example-components', request);
-    expect(model.updateOne).toHaveBeenCalledWith(
-      { uuid: 'learner' },
-      { $addToSet: { completedWorkshopIds: 'example-components' } },
-      { runValidators: true }
-    );
     await expect(
-      service.page(
+      service.complete('learner', 'example-components', request)
+    ).rejects.toThrow('View every workshop page');
+    await expect(
+      service.seen(
         'learner',
         'example-components',
         'example-signals-page',
         request
       )
     ).rejects.toThrow('Page does not belong');
+    expect(record.viewedPages).toEqual([]);
+    await service.seen(
+      'learner',
+      'example-components',
+      'example-components-page',
+      request
+    );
+    await service.seen(
+      'learner',
+      'example-components',
+      'example-components-page',
+      request
+    );
+    expect(record.viewedPages).toHaveLength(1);
+    await service.seen(
+      'learner',
+      'example-components',
+      'example-components-practice',
+      request
+    );
+    expect(
+      (await service.catalog('learner', request)).sections[0].completedCount
+    ).toBe(0);
+    await service.sampleWorkshopAssessment(
+      'learner',
+      'example-components-test',
+      'database',
+      request
+    );
+    const catalog = await service.complete(
+      'learner',
+      'example-components',
+      request
+    );
+    expect(catalog.sections[0].completedCount).toBe(1);
+    expect(
+      (await service.complete('learner', 'example-components', request))
+        .sections[0].completedCount
+    ).toBe(1);
+  });
+  it('does not record page visits before a workshop is started', async () => {
+    record.demoAssessmentSections = ['example-angular'];
+    await expect(
+      service.seen(
+        'learner',
+        'example-components',
+        'example-components-page',
+        request
+      )
+    ).rejects.toThrow('Start the workshop');
+    expect(model.updateOne).not.toHaveBeenCalled();
+  });
+  it('completes when the last page is seen after the workshop assessment', async () => {
+    record.demoAssessmentSections = ['example-angular'];
+    await service.start('learner', 'example-components', request);
+    await service.sampleWorkshopAssessment(
+      'learner',
+      'example-components-test',
+      'component',
+      request
+    );
+    await service.seen(
+      'learner',
+      'example-components',
+      'example-components-practice',
+      request
+    );
+    const catalog = await service.seen(
+      'learner',
+      'example-components',
+      'example-components-page',
+      request
+    );
+    expect(catalog.sections[0].completedCount).toBe(1);
   });
   it('disables the sample write path outside explicit local example mode', async () => {
     process.env.WORKSHOP_PROGRESS_DEMO = 'false';
@@ -145,4 +224,32 @@ describe('Workshop progress commands', () => {
       }
     );
   });
+  it('reconciles live assessment completion on refresh and never counts unavailable page content', async () => {
+    process.env.WORKSHOP_PROGRESS_DEMO = 'false';
+    process.env.DOCKER_NET_NAME_DOCUMENT = 'http://document.invalid/api';
+    process.env.DOCKER_NET_NAME_ASSESSMENT = 'http://assessment.invalid/api';
+    record.startedWorkshopIds = ['live-workshop'];
+    record.viewedPages = [{ workshopId: 'live-workshop', pageId: 'first' }];
+    let completed = false;
+    http.get.mockImplementation((url: string) => {
+      if (url.endsWith('workshop/second')) return throwError(() => new Error('Content unavailable'));
+      return of({ data: url.endsWith('navigation/sections')
+        ? { sections: { angular: { _id: 'angular', sectionTitle: 'Angular' } } }
+        : url.includes('learner/catalog')
+          ? [{ subject: 'angular', completedCount: 1, highestPassedLevel: 0, tests: [{ id: 'required', status: completed ? 'completed' : 'available' }] }]
+          : [{ _id: 'live-workshop', sectionId: 'angular', name: 'Live', summary: '', sortId: 0, workshopDocuments: [
+            { _id: 'first', kind: 'PAGE', name: 'First', sortId: 0 },
+            { _id: 'second', kind: 'PAGE', name: 'Second', sortId: 1 },
+            { _id: 'assessment', kind: 'ASSESSMENT_TEST', resourceId: 'required', name: 'Test', sortId: 2 },
+          ] }] });
+    });
+    await expect(service.seen('learner', 'live-workshop', 'second', request)).rejects.toThrow('unavailable');
+    expect(record.viewedPages).toHaveLength(1);
+    expect(model.updateOne).not.toHaveBeenCalled();
+    record.viewedPages.push({ workshopId: 'live-workshop', pageId: 'second' });
+    expect((await service.catalog('learner', request)).sections[0].completedCount).toBe(0);
+    completed = true;
+    expect((await service.catalog('learner', request)).sections[0].completedCount).toBe(1);
+  });
+
 });

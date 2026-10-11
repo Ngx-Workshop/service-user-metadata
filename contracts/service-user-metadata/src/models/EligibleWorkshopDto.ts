@@ -11,6 +11,11 @@ export type EligibleWorkshopDto = {
     level: number;
     sortId: number;
     status: 'available' | 'in-progress' | 'completed';
+    viewedPageIds: Array<string>;
+    pageCount: number;
+    completedAssessmentIds: Array<string>;
+    assessmentCount: number;
+    assessmentsCompleted: boolean;
     workshopDocuments: Array<JourneyEntryDto>;
 };
 

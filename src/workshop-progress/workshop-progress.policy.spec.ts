@@ -9,7 +9,7 @@ const workshops: WorkshopSource[] = [
     summary: '',
     sortId: 0,
     level: 1,
-    workshopDocuments: [],
+    workshopDocuments: [{ _id: 'page', kind: 'PAGE', name: 'Page', sortId: 0 }],
   },
   {
     _id: 'b',
@@ -18,7 +18,7 @@ const workshops: WorkshopSource[] = [
     summary: '',
     sortId: 1,
     level: 1,
-    workshopDocuments: [],
+    workshopDocuments: [{ _id: 'page', kind: 'PAGE', name: 'Page', sortId: 0 }],
   },
   {
     _id: 'c',
@@ -27,7 +27,7 @@ const workshops: WorkshopSource[] = [
     summary: '',
     sortId: 0,
     level: 2,
-    workshopDocuments: [],
+    workshopDocuments: [{ _id: 'page', kind: 'PAGE', name: 'Page', sortId: 0 }],
   },
   {
     _id: 'd',
@@ -36,7 +36,7 @@ const workshops: WorkshopSource[] = [
     summary: '',
     sortId: 0,
     level: 1,
-    workshopDocuments: [],
+    workshopDocuments: [{ _id: 'page', kind: 'PAGE', name: 'Page', sortId: 0 }],
   },
 ];
 const assessment = {
@@ -66,13 +66,23 @@ describe('Workshop eligibility policy', () => {
     const result = sectionProgress(section, workshops, assessment, {
       ...progress,
       completedWorkshopIds: ['a', 'd'],
+      startedWorkshopIds: ['a', 'd'],
+      viewedPages: [
+        { workshopId: 'a', pageId: 'page' },
+        { workshopId: 'd', pageId: 'page' },
+      ],
     });
     expect(result.unlockedLevel).toBe(1);
   });
   it('unlocks the next level when both foundation workshops are complete', () => {
     const result = sectionProgress(section, workshops, assessment, {
       ...progress,
-      completedWorkshopIds: ['a', 'b', 'b'],
+      completedWorkshopIds: [],
+      startedWorkshopIds: ['a', 'b'],
+      viewedPages: [
+        { workshopId: 'a', pageId: 'page' },
+        { workshopId: 'b', pageId: 'page' },
+      ],
     });
     expect(result.unlockedLevel).toBe(2);
     expect(result.completedCount).toBe(2);
@@ -97,7 +107,12 @@ describe('Workshop eligibility policy', () => {
     expect(
       sectionProgress(section, catalog, assessment, {
         ...progress,
-        completedWorkshopIds: ['a', 'b'],
+        completedWorkshopIds: [],
+        startedWorkshopIds: ['a', 'b'],
+        viewedPages: [
+          { workshopId: 'a', pageId: 'page' },
+          { workshopId: 'b', pageId: 'page' },
+        ],
       }).unlockedLevel
     ).toBe(4);
   });
@@ -119,5 +134,83 @@ describe('Workshop eligibility policy', () => {
       completedWorkshopIds: ['c'],
     });
     expect(result.workshops.map((w) => w._id)).toEqual(['a', 'b']);
+  });
+  it('ignores legacy self-attested completion without page evidence', () => {
+    const result = sectionProgress(section, workshops, assessment, {
+      ...progress,
+      startedWorkshopIds: ['a', 'b'],
+      completedWorkshopIds: ['a', 'b'],
+    });
+    expect(result.completedCount).toBe(0);
+    expect(result.unlockedLevel).toBe(1);
+  });
+  it('requires every exact assessment reference and all distinct pages regardless of visit order', () => {
+    const a = {
+      ...workshops[0],
+      workshopDocuments: [
+        ...workshops[0].workshopDocuments,
+        { _id: 'p2', kind: 'PAGE' as const, name: 'Second', sortId: 1 },
+        {
+          _id: 'ref',
+          kind: 'ASSESSMENT_TEST' as const,
+          resourceId: 'required',
+          name: 'Test',
+          sortId: 2,
+        },
+      ],
+    };
+    const visited = {
+      ...progress,
+      startedWorkshopIds: ['a'],
+      viewedPages: [
+        { workshopId: 'a', pageId: 'p2' },
+        { workshopId: 'other', pageId: 'page' },
+        { workshopId: 'a', pageId: 'p2' },
+      ],
+    };
+    const otherTest = {
+      ...assessment,
+      tests: [{ id: 'unrelated', status: 'completed' }],
+    };
+    let result = sectionProgress(section, [a], otherTest, visited);
+    expect(result.workshops[0].viewedPageIds).toEqual(['p2']);
+    expect(result.completedCount).toBe(0);
+    visited.viewedPages.push({ workshopId: 'a', pageId: 'page' });
+    result = sectionProgress(section, [a], otherTest, visited);
+    expect(result.completedCount).toBe(0);
+    result = sectionProgress(section, [a], assessment, visited, [
+      assessment,
+      {
+        ...assessment,
+        subject: 'another-section',
+        tests: [{ id: 'required', status: 'completed' }],
+      },
+    ]);
+    expect(result.completedCount).toBe(1);
+  });
+  it('does not auto-complete empty workshops or missing assessment references', () => {
+    const started = { ...progress, startedWorkshopIds: ['a'] };
+    expect(
+      sectionProgress(
+        section,
+        [{ ...workshops[0], workshopDocuments: [] }],
+        assessment,
+        started
+      ).completedCount
+    ).toBe(0);
+    const broken = {
+      ...workshops[0],
+      workshopDocuments: [
+        {
+          _id: 'missing',
+          kind: 'ASSESSMENT_TEST' as const,
+          name: 'Missing',
+          sortId: 0,
+        },
+      ],
+    };
+    expect(
+      sectionProgress(section, [broken], assessment, started).completedCount
+    ).toBe(0);
   });
 });

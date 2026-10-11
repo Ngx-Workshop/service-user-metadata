@@ -24,17 +24,28 @@ async function request(path = '', body, expected = 200, headers = {}) {
   assert.equal(data.sections[0].unlockedLevel, 1); // Failed initial assessment still permits foundation study.
   assert.equal(data.sections[0].workshops.length, 2);
   await request('/workshops/example-components/complete', {}, 403);
+  await request('/workshops/example-components/pages/example-components-page/seen', {}, 403);
   await request('/workshops/example-components/start', {}, 200);
   assert.equal((await request()).sections[0].workshops[0].status, 'in-progress');
   const page = await request('/workshops/example-components/pages/example-components-page');
   assert.match(page.html, /Your first component/);
   await request('/workshops/example-components/pages/example-signals-page', undefined, 404);
+  await request('/workshops/example-components/pages/example-signals-page/seen', {}, 404);
+  await request('/workshops/example-components/pages/example-components-page/seen', {}, 200);
+  await request('/workshops/example-components/pages/example-components-page/seen', {}, 200);
+  assert.equal((await request()).sections[0].workshops[0].viewedPageIds.length, 1);
+  await request('/workshops/example-components/complete', {}, 403);
+  await request('/workshops/example-components/pages/example-components-practice/seen', {}, 200);
+  assert.equal((await request()).sections[0].completedCount, 0); // All pages alone are insufficient.
+  await request('/workshops/example-components/complete', {}, 403);
+  await request('/example-workshop-assessments/example-components-test', { answer: 'database' }, 200);
   await request('/workshops/example-components/complete', {}, 200);
   await request('/workshops/example-components/complete', {}, 200);
   assert.equal((await request()).sections[0].completedCount, 1);
   assert.equal((await request()).sections[0].unlockedLevel, 1);
   await request('/workshops/example-templates/start', {}, 200);
-  await request('/workshops/example-templates/complete', {}, 200);
+  await request('/workshops/example-templates/complete', {}, 403);
+  await request('/workshops/example-templates/pages/example-templates-page/seen', {}, 200);
   data = await request();
   assert.equal(data.sections[0].unlockedLevel, 2);
   assert.equal(data.sections[0].completedCount, 2);
@@ -46,6 +57,6 @@ async function request(path = '', body, expected = 200, headers = {}) {
     body: JSON.stringify({ completedWorkshopIds: ['example-signals'] }),
   });
   assert.equal(profile.status, 400);
-  console.log('PASS: real local HTTP/Mongo assessment gate, resume persistence, page ownership, idempotent completion, level unlock, section isolation, identity validation and profile isolation.');
+  console.log('PASS: real local HTTP/Mongo assessment gate, resume persistence, page ownership, distinct persisted page visits, assessment-required automatic completion, level unlock, section isolation, identity validation and profile isolation.');
   // Leave level 2 unlocked for inspection; Reset local example lets the user replay the flow.
 })().catch(error => { console.error(error); process.exitCode = 1; });

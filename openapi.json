@@ -376,6 +376,44 @@
         ]
       }
     },
+    "/user-metadata/workshop-progress/workshops/{id}/pages/{pageId}/seen": {
+      "post": {
+        "operationId": "WorkshopProgressController_seen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkshopProgressDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
+    },
     "/user-metadata/workshop-progress/example-reset": {
       "post": {
         "operationId": "WorkshopProgressController_resetExample",
@@ -387,6 +425,46 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorkshopProgressDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Workshop Progress"
+        ]
+      }
+    },
+    "/user-metadata/workshop-progress/example-workshop-assessments/{testId}": {
+      "post": {
+        "operationId": "WorkshopProgressController_sampleWorkshopAssessment",
+        "parameters": [
+          {
+            "name": "testId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoAssessmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoAssessmentResultDto"
                 }
               }
             }
@@ -611,6 +689,27 @@
               "completed"
             ]
           },
+          "viewedPageIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pageCount": {
+            "type": "number"
+          },
+          "completedAssessmentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assessmentCount": {
+            "type": "number"
+          },
+          "assessmentsCompleted": {
+            "type": "boolean"
+          },
           "workshopDocuments": {
             "type": "array",
             "items": {
@@ -626,6 +725,11 @@
           "level",
           "sortId",
           "status",
+          "viewedPageIds",
+          "pageCount",
+          "completedAssessmentIds",
+          "assessmentCount",
+          "assessmentsCompleted",
           "workshopDocuments"
         ]
       },

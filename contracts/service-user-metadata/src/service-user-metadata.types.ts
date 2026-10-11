@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user-metadata/workshop-progress/workshops/{id}/pages/{pageId}/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WorkshopProgressController_seen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user-metadata/workshop-progress/example-reset": {
         parameters: {
             query?: never;
@@ -174,6 +190,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["WorkshopProgressController_resetExample"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/user-metadata/workshop-progress/example-workshop-assessments/{testId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["WorkshopProgressController_sampleWorkshopAssessment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -247,6 +279,11 @@ export interface components {
             sortId: number;
             /** @enum {string} */
             status: "available" | "in-progress" | "completed";
+            viewedPageIds: string[];
+            pageCount: number;
+            completedAssessmentIds: string[];
+            assessmentCount: number;
+            assessmentsCompleted: boolean;
             workshopDocuments: components["schemas"]["JourneyEntryDto"][];
         };
         WorkshopSectionProgressDto: {
@@ -546,6 +583,28 @@ export interface operations {
             };
         };
     };
+    WorkshopProgressController_seen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkshopProgressDto"];
+                };
+            };
+        };
+    };
     WorkshopProgressController_resetExample: {
         parameters: {
             query?: never;
@@ -561,6 +620,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkshopProgressDto"];
+                };
+            };
+        };
+    };
+    WorkshopProgressController_sampleWorkshopAssessment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                testId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoAssessmentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoAssessmentResultDto"];
                 };
             };
         };

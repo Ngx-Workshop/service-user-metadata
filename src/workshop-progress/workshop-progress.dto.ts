@@ -18,6 +18,11 @@ export class EligibleWorkshopDto {
   @ApiProperty() sortId: number;
   @ApiProperty({ enum: ['available', 'in-progress', 'completed'] })
   status: 'available' | 'in-progress' | 'completed';
+  @ApiProperty({ type: [String] }) viewedPageIds: string[];
+  @ApiProperty() pageCount: number;
+  @ApiProperty({ type: [String] }) completedAssessmentIds: string[];
+  @ApiProperty() assessmentCount: number;
+  @ApiProperty() assessmentsCompleted: boolean;
   @ApiProperty({ type: [JourneyEntryDto] })
   workshopDocuments: JourneyEntryDto[];
 }
