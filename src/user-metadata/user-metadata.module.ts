@@ -1,4 +1,10 @@
 import {
+  CodingLabAttempt,
+  CodingLabAttemptSchema,
+} from '../coding-lab-attempts/coding-lab-attempt.schema';
+import { CodingLabAttemptService } from '../coding-lab-attempts/coding-lab-attempt.service';
+import { CodingLabAttemptController } from '../coding-lab-attempts/coding-lab-attempt.controller';
+import {
   WorkshopProgress,
   WorkshopProgressSchema,
 } from '../workshop-progress/workshop-progress.schema';
@@ -27,6 +33,7 @@ const SCHEMA_IMPORTS =
     : [
         MongooseModule.forFeature([
           { name: UserMetadata.name, schema: UserMetadataSchema },
+          { name: CodingLabAttempt.name, schema: CodingLabAttemptSchema },
           { name: WorkshopProgress.name, schema: WorkshopProgressSchema },
         ]),
       ];
@@ -35,6 +42,7 @@ const FAKE_PROVIDERS =
   process.env.GENERATE_OPENAPI === 'true'
     ? [
         { provide: getModelToken(WorkshopProgress.name), useValue: {} },
+        { provide: getModelToken(CodingLabAttempt.name), useValue: {} },
         {
           provide: getModelToken(UserMetadata.name),
           // Minimal fake the service can accept; if service calls methods during generation (it shouldn't), add no-op fns
@@ -55,9 +63,14 @@ const FAKE_PROVIDERS =
     : [];
 @Module({
   imports: [HttpModule, NgxAuthClientModule, ...SCHEMA_IMPORTS],
-  controllers: [UserMetadataController, WorkshopProgressController],
+  controllers: [
+    UserMetadataController,
+    WorkshopProgressController,
+    CodingLabAttemptController,
+  ],
   providers: [
     UserMetadataService,
+    CodingLabAttemptService,
     WorkshopProgressService,
     {
       provide: APP_GUARD,

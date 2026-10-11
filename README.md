@@ -173,3 +173,7 @@ npm run test:e2e
 ## Workshop progression
 
 See [the workshop progression guide](docs/workshop-progression.md) for the separate learning-state collection, authenticated eligibility API, local example, verification, and live integration configuration.
+
+## Learner coding labs
+
+Authenticated lab attempts, saved solutions, server-scored results, history and retry are described in [coding lab journey](docs/coding-lab-journey.md). Configure CODING_LABS_BASE_URL; deploy the additive coding service routes before using this API. No package publication or deployment is performed by the local implementation.

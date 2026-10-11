@@ -3,11 +3,11 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { AppModule } from './app.module';
 
 async function generate() {
   // Ensure DB is skipped while generating the spec
   process.env.GENERATE_OPENAPI = 'true';
+  const { AppModule } = await import('./app.module');
 
   const start = Date.now();
   console.log('🧩 [openapi] Bootstrapping Nest app (DB disabled)...');

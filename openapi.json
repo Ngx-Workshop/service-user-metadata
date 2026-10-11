@@ -514,6 +514,167 @@
           "Workshop Progress"
         ]
       }
+    },
+    "/user-metadata/coding-lab-attempts": {
+      "get": {
+        "operationId": "CodingLabAttemptController_history",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LabAttemptDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Coding lab attempts"
+        ]
+      },
+      "post": {
+        "operationId": "CodingLabAttemptController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLabAttemptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabAttemptDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Coding lab attempts"
+        ]
+      }
+    },
+    "/user-metadata/coding-lab-attempts/{id}": {
+      "get": {
+        "operationId": "CodingLabAttemptController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabAttemptDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Coding lab attempts"
+        ]
+      },
+      "patch": {
+        "operationId": "CodingLabAttemptController_save",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveLabAttemptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabAttemptDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Coding lab attempts"
+        ]
+      }
+    },
+    "/user-metadata/coding-lab-attempts/{id}/submit": {
+      "post": {
+        "operationId": "CodingLabAttemptController_submit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitLabAttemptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabAttemptDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Coding lab attempts"
+        ]
+      }
     }
   },
   "info": {
@@ -845,6 +1006,159 @@
         "required": [
           "correct",
           "catalog"
+        ]
+      },
+      "LabSampleResultDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "error",
+              "timeout"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status"
+        ]
+      },
+      "LabAttemptResultDto": {
+        "type": "object",
+        "properties": {
+          "passed": {
+            "type": "boolean"
+          },
+          "passedTests": {
+            "type": "number"
+          },
+          "totalTests": {
+            "type": "number"
+          },
+          "durationMs": {
+            "type": "number"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LabSampleResultDto"
+            }
+          }
+        },
+        "required": [
+          "passed",
+          "passedTests",
+          "totalTests",
+          "durationMs",
+          "results"
+        ]
+      },
+      "LabAttemptDto": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "labId": {
+            "type": "string"
+          },
+          "versionId": {
+            "type": "string"
+          },
+          "versionNumber": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "in-progress",
+              "completed"
+            ]
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/LabAttemptResultDto"
+          }
+        },
+        "required": [
+          "_id",
+          "labId",
+          "versionId",
+          "versionNumber",
+          "title",
+          "code",
+          "revision",
+          "status",
+          "startedAt",
+          "updatedAt"
+        ]
+      },
+      "StartLabAttemptDto": {
+        "type": "object",
+        "properties": {
+          "labId": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "labId",
+          "requestId"
+        ]
+      },
+      "SaveLabAttemptDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "revision"
+        ]
+      },
+      "SubmitLabAttemptDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "revision"
         ]
       }
     }
