@@ -33,6 +33,7 @@ Create a `.env` file in the project root.
 | `MONGODB_URI`      | Yes (runtime) | -                              | MongoDB connection string                                     |
 | `PORT`             |            No | `3004`                         | HTTP port                                                     |
 | `AUTH_BASE_URL`    |            No | `https://auth.ngx-workshop.io` | Auth service base URL used when propagating role changes      |
+| `CODING_LABS_BASE_URL` | For coding labs; required by deployment | - | Coding labs service base URL, e.g. `http://coding-labs:3009` on `ngx-net` |
 | `USER_METADATA_LOCAL_DEV` | No | `false` | Explicit isolated local mode; requires development and fixed local database |
 | `GENERATE_OPENAPI` |            No | `false`                        | Internal flag used by OpenAPI generation to disable DB wiring |
 
@@ -62,6 +63,12 @@ npm run start:prod
 `postbuild` also regenerates `openapi.json`.
 
 ## Docker
+
+The deployment workflow writes repository secrets into the runtime `.env` file
+and starts the container with `--env-file .env`. Set the repository secret
+`CODING_LABS_BASE_URL` to `http://coding-labs:3009` and deploy the updated workflow
+to pass it to the service. Adding a GitHub secret alone does not update a running
+container; deployment recreates it with the new environment.
 
 ```bash
 docker build -t service-user-metadata .
