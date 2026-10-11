@@ -1,24 +1,24 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
-  Post,
-  Patch,
-  Param,
-  Req,
   HttpCode,
-  BadRequestException,
+  Param,
+  Patch,
+  Post,
+  Req,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ActiveUser, IActiveUserData } from '@tmdjr/ngx-auth-client';
 import { Request } from 'express';
-import { CodingLabAttemptService } from './coding-lab-attempt.service';
 import {
   LabAttemptDto,
   SaveLabAttemptDto,
   StartLabAttemptDto,
   SubmitLabAttemptDto,
 } from './coding-lab-attempt.dto';
+import { CodingLabAttemptService } from './coding-lab-attempt.service';
 function validId(id: string) {
   if (!/^[a-f\d]{24}$/i.test(id))
     throw new BadRequestException('Invalid attempt identifier');
