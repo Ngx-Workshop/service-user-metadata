@@ -9,11 +9,17 @@ import {
   Param,
   Patch,
   Put,
+  Post,
   Query,
   Request,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   ActiveUser,
   IActiveUserData,
@@ -27,6 +33,7 @@ import {
   UpdateUserMetadataDto,
   UserMetadataDto,
 } from './dto/user-metadata.dto';
+import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { UserMetadataService } from './user-metadata.service';
 
 @ApiTags('User Metadata')
@@ -35,6 +42,17 @@ export class UserMetadataController {
   private readonly logger = new Logger(UserMetadataController.name);
 
   constructor(private readonly userMetadataService: UserMetadataService) {}
+
+  @Post('admin/users')
+  @Roles(Role.Admin)
+  @ApiCreatedResponse({ type: UserMetadataDto })
+  createUser(
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+    dto: AdminCreateUserDto,
+    @Request() request
+  ) {
+    return this.userMetadataService.createAccount(dto, request);
+  }
 
   @Put()
   @ApiOkResponse({ description: 'User metadata upserted successfully' })

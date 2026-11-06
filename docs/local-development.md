@@ -63,3 +63,12 @@ URIs, production-flag rejection, normal-auth delegation and role-sync isolation.
 Build includes OpenAPI generation, with no schema/endpoint changes. Generated
 contracts need no publication. Keep local processes running for MFE development.
 Use `npm run watch:hosted-api` in the MFE to return to hosted metadata APIs if needed.
+
+## Admin-created sign-in accounts
+
+Start service-auth with npm run start:admin-local for the new Create User journey.
+It uses auth_users_local on loopback:3005; metadata remains on loopback:3004.
+New account roles synchronize between these isolated stores; the three original
+synthetic seed IDs still have no sign-in identity. No hosted accounts are modified.
+Run npm run test:admin-users:http for the real disposable account/profile check.
+See [the provisioning guide](admin-user-provisioning.md) for deployment boundaries.

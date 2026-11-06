@@ -10,10 +10,13 @@ import {
   Logger,
   NotFoundException,
   UnauthorizedException,
+  ServiceUnavailableException,
+  BadGatewayException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { IActiveUserData, Role } from '@tmdjr/ngx-auth-client';
 import { plainToInstance } from 'class-transformer';
+import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { Request } from 'express';
 import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
@@ -39,6 +42,84 @@ export class UserMetadataService {
     private userMetadataModel: Model<UserMetadataDocument>,
     private httpService: HttpService
   ) {}
+
+  async createAccount(
+    dto: AdminCreateUserDto,
+    request: Request
+  ): Promise<UserMetadata> {
+    if (localMode()) assertLocalDatabase();
+    const authBase = localMode() ? 'http://127.0.0.1:3005' : this.baseUrl;
+    let account: { uuid: string; email: string; role: string };
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<{ uuid: string; email: string; role: string }>(
+          `${authBase}/admin/users`,
+          {
+            email: dto.email.trim().toLowerCase(),
+            password: dto.password,
+            role: dto.role,
+            requestId: dto.requestId,
+          },
+          {
+            timeout: 10000,
+            headers: localMode()
+              ? {}
+              : { Cookie: request.headers.cookie ?? '' },
+          }
+        )
+      );
+      account = response.data;
+    } catch (error) {
+      if (error.response?.status === 409)
+        throw new ConflictException(
+          'Email or creation request already exists. Retry the original request or use a different email.'
+        );
+      if ([401, 403].includes(error.response?.status))
+        throw new UnauthorizedException(
+          'Account creation requires administrator authorization'
+        );
+      throw new ServiceUnavailableException(
+        'Account service unavailable. Retry this creation request; it is safe to retry.'
+      );
+    }
+    if (
+      !account?.uuid ||
+      account.email !== dto.email.trim().toLowerCase() ||
+      account.role !== dto.role
+    )
+      throw new BadGatewayException(
+        'Account service returned an invalid response'
+      );
+    try {
+      return await this.userMetadataModel
+        .findOneAndUpdate(
+          { uuid: account.uuid },
+          {
+            $set: {
+              email: account.email,
+              role: account.role,
+              firstName: dto.firstName ?? '',
+              lastName: dto.lastName ?? '',
+              avatarUrl: dto.avatarUrl ?? '',
+              description: dto.description ?? '',
+              lastUpdated: new Date(),
+            },
+            $setOnInsert: { uuid: account.uuid },
+          },
+          {
+            upsert: true,
+            new: true,
+            setDefaultsOnInsert: true,
+            runValidators: true,
+          }
+        )
+        .exec();
+    } catch {
+      throw new ServiceUnavailableException(
+        'Account created, but its profile could not be saved. Retry this same request to finish creating the profile.'
+      );
+    }
+  }
 
   async upsertByUuid({
     sub: uuid,
@@ -184,6 +265,10 @@ export class UserMetadataService {
     role: string,
     request: Request
   ): Promise<UserMetadata> {
+    // Confirm identity-role synchronization before advertising success in metadata.
+    // Synthetic seed IDs have no identity; real local accounts use the isolated auth service.
+    if (!localMode() || /^[a-f0-9]{24}$/i.test(userId))
+      await this.updateUserRole(userId, role, request);
     const updatedUserMetadata = await this.userMetadataModel
       .findOneAndUpdate(
         { uuid: userId },
@@ -196,7 +281,6 @@ export class UserMetadataService {
       throw new NotFoundException(`UserMetadata with ID "${userId}" not found`);
     }
 
-    if (!localMode()) void this.updateUserRole(userId, role, request);
     return updatedUserMetadata;
   }
 
@@ -207,6 +291,21 @@ export class UserMetadataService {
   ): Promise<void> {
     if (localMode()) {
       assertLocalDatabase();
+      if (!/^[a-f0-9]{24}$/i.test(userId)) return;
+      try {
+        const result = await firstValueFrom(
+          this.httpService.put(
+            'http://127.0.0.1:3005/role',
+            { userId, role },
+            { timeout: 10000 }
+          )
+        );
+        if (!result.data) throw new Error('Local account not found');
+      } catch {
+        throw new ServiceUnavailableException(
+          'Unable to update the local sign-in account role. Retry the action.'
+        );
+      }
       return;
     }
     const accessToken = request.cookies?.accessToken;

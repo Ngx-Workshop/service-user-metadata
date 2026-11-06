@@ -1,6 +1,37 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/user-metadata/admin/users": {
+      "post": {
+        "operationId": "UserMetadataController_createUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserMetadataDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "User Metadata"
+        ]
+      }
+    },
     "/user-metadata": {
       "put": {
         "operationId": "UserMetadataController_upsertByUserId",
@@ -687,6 +718,49 @@
   "servers": [],
   "components": {
     "schemas": {
+      "AdminCreateUserDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "writeOnly": true,
+            "minLength": 12,
+            "maxLength": 100
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "regular",
+              "publisher",
+              "admin"
+            ]
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "role",
+          "requestId"
+        ]
+      },
       "UserMetadataDto": {
         "type": "object",
         "properties": {

@@ -184,3 +184,5 @@ See [the workshop progression guide](docs/workshop-progression.md) for the separ
 ## Learner coding labs
 
 Authenticated lab attempts, saved solutions, server-scored results, history and retry are described in [coding lab journey](docs/coding-lab-journey.md). Configure CODING_LABS_BASE_URL; deploy the additive coding service routes before using this API. No package publication or deployment is performed by the local implementation.
+
+Administrator creation: [account/profile provisioning](docs/admin-user-provisioning.md), including retry and local auth setup.

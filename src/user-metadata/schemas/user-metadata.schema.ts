@@ -13,16 +13,16 @@ export class UserMetadata {
   @Prop({ enum: Role, default: Role.Regular })
   role: Role;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   firstName: string;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   lastName: string;
 
   @Prop({ required: true, email: true })
   email: string;
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   avatarUrl: string;
 
   @Prop({ default: 'No description provided' })

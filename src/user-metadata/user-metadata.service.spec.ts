@@ -92,6 +92,17 @@ describe('UserMetadataService', () => {
     expect(sync).toHaveBeenCalledWith('user', 'publisher', request);
   });
 
+  it('does not report metadata-role success if identity synchronization fails', async () => {
+    delete process.env.USER_METADATA_LOCAL_DEV;
+    jest
+      .spyOn(service, 'updateUserRole')
+      .mockRejectedValue(new Error('auth unavailable'));
+    await expect(
+      service.updateRole('user', 'publisher', {} as Request)
+    ).rejects.toThrow('auth unavailable');
+    expect(findOneAndUpdateMock).not.toHaveBeenCalled();
+  });
+
   it('rejects unsafe database configuration before direct local sync', async () => {
     process.env.USER_METADATA_LOCAL_DEV = 'true';
     process.env.NODE_ENV = 'development';

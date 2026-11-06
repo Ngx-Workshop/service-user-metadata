@@ -27,7 +27,8 @@
     "seed:local": "USER_METADATA_LOCAL_DEV=true NODE_ENV=development MONGODB_URI=mongodb://127.0.0.1:27017/user_metadata_local node -r ts-node/register scripts/seed-local.cjs",
     "test:local:http": "USER_METADATA_LOCAL_DEV=true NODE_ENV=development MONGODB_URI=mongodb://127.0.0.1:27017/user_metadata_local node -r ts-node/register scripts/verify-local.cjs",
     "start:workshop-example": "USER_METADATA_LOCAL_DEV=true NODE_ENV=development GENERATE_OPENAPI=false WORKSHOP_PROGRESS_DEMO=true MONGODB_URI=mongodb://127.0.0.1:27017/user_metadata_local PORT=3004 nest start --watch",
-    "test:workshop-example:http": "node scripts/verify-workshop-example.cjs"
+    "test:workshop-example:http": "node scripts/verify-workshop-example.cjs",
+    "test:admin-users:http": "USER_METADATA_LOCAL_DEV=true NODE_ENV=development MONGODB_URI=mongodb://127.0.0.1:27017/user_metadata_local node scripts/verify-admin-provisioning.cjs"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
