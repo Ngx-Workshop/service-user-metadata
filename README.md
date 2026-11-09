@@ -186,3 +186,9 @@ See [the workshop progression guide](docs/workshop-progression.md) for the separ
 Authenticated lab attempts, saved solutions, server-scored results, history and retry are described in [coding lab journey](docs/coding-lab-journey.md). Configure CODING_LABS_BASE_URL; deploy the additive coding service routes before using this API. No package publication or deployment is performed by the local implementation.
 
 Administrator creation: [account/profile provisioning](docs/admin-user-provisioning.md), including retry and local auth setup.
+
+Social website accounts use the existing authenticated PUT /user-metadata upsert
+with the auth service's local UUID and email. No provider tokens/subjects enter the
+metadata DTO. New social users receive regular metadata defaults; profile and role
+administration continue through existing routes. Auth retries metadata initialization
+on each social sign-in. See [rollout](https://github.com/Ngx-Workshop/service-auth/blob/main/docs/social-login.md).
