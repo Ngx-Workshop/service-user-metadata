@@ -91,11 +91,7 @@ export class UserMetadataController {
     paginationQuery: SearchUserMetadataQueryDto
   ) {
     const { page, limit, query, role } = paginationQuery;
-    this.logger.log(
-      `Fetching paginated user metadata with page=${page}, limit=${limit}, query="${
-        query ?? ''
-      }", role=${role ?? 'any'}`
-    );
+    this.logger.log({ event: 'user_metadata_page_requested', page, limit });
     return this.userMetadataService.findAllPaginated(page, limit, query, role);
   }
 

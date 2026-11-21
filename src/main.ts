@@ -1,4 +1,8 @@
 import {
+  configureObservability,
+  createServiceLogger,
+} from './observability/observability';
+import {
   assertLocalDatabase,
   localMode,
   localOrigins,
@@ -13,7 +17,10 @@ async function bootstrap() {
     throw new Error('OpenAPI generation mode cannot serve HTTP');
   }
   assertLocalDatabase();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: createServiceLogger(),
+  });
+  configureObservability(app);
   app.use(cookieParser());
   if (localMode()) app.enableCors({ origin: localOrigins, credentials: true });
   app.useGlobalPipes(
@@ -25,7 +32,7 @@ async function bootstrap() {
     localMode() ? '127.0.0.1' : '0.0.0.0'
   );
 }
-bootstrap().catch((error: unknown) => {
-  console.error(error);
+bootstrap().catch(() => {
+  createServiceLogger().error('Service startup failed', 'Bootstrap');
   process.exitCode = 1;
 });
