@@ -21,6 +21,10 @@ import { Request } from 'express';
 import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 import {
+  correlationHeaders,
+  observeOperation,
+} from '../observability/observability';
+import {
   CreateUserMetadataDto,
   PaginatedUserMetadataDto,
   UpdateUserMetadataDto,
@@ -47,94 +51,103 @@ export class UserMetadataService {
     dto: AdminCreateUserDto,
     request: Request
   ): Promise<UserMetadata> {
-    if (localMode()) assertLocalDatabase();
-    const authBase = localMode() ? 'http://127.0.0.1:3005' : this.baseUrl;
-    let account: { uuid: string; email: string; role: string };
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post<{ uuid: string; email: string; role: string }>(
-          `${authBase}/admin/users`,
-          {
-            email: dto.email.trim().toLowerCase(),
-            password: dto.password,
-            role: dto.role,
-            requestId: dto.requestId,
-          },
-          {
-            timeout: 10000,
-            headers: localMode()
-              ? {}
-              : { Cookie: request.headers.cookie ?? '' },
-          }
-        )
-      );
-      account = response.data;
-    } catch (error) {
-      if (error.response?.status === 409)
-        throw new ConflictException(
-          'Email or creation request already exists. Retry the original request or use a different email.'
-        );
-      if ([401, 403].includes(error.response?.status))
-        throw new UnauthorizedException(
-          'Account creation requires administrator authorization'
-        );
-      throw new ServiceUnavailableException(
-        'Account service unavailable. Retry this creation request; it is safe to retry.'
-      );
-    }
-    if (
-      !account?.uuid ||
-      account.email !== dto.email.trim().toLowerCase() ||
-      account.role !== dto.role
-    )
-      throw new BadGatewayException(
-        'Account service returned an invalid response'
-      );
-    try {
-      return await this.userMetadataModel
-        .findOneAndUpdate(
-          { uuid: account.uuid },
-          {
-            $set: {
-              email: account.email,
-              role: account.role,
-              firstName: dto.firstName ?? '',
-              lastName: dto.lastName ?? '',
-              avatarUrl: dto.avatarUrl ?? '',
-              description: dto.description ?? '',
-              lastUpdated: new Date(),
+    return observeOperation(this.logger, 'account_provision', async () => {
+      if (localMode()) assertLocalDatabase();
+      const authBase = localMode() ? 'http://127.0.0.1:3005' : this.baseUrl;
+      let account: { uuid: string; email: string; role: string };
+      try {
+        const response = await firstValueFrom(
+          this.httpService.post<{ uuid: string; email: string; role: string }>(
+            `${authBase}/admin/users`,
+            {
+              email: dto.email.trim().toLowerCase(),
+              password: dto.password,
+              role: dto.role,
+              requestId: dto.requestId,
             },
-            $setOnInsert: { uuid: account.uuid },
-          },
-          {
-            upsert: true,
-            new: true,
-            setDefaultsOnInsert: true,
-            runValidators: true,
-          }
-        )
-        .exec();
-    } catch {
-      throw new ServiceUnavailableException(
-        'Account created, but its profile could not be saved. Retry this same request to finish creating the profile.'
-      );
-    }
+            {
+              timeout: 10000,
+              headers: {
+                ...correlationHeaders(),
+                ...(localMode()
+                  ? {}
+                  : { Cookie: request.headers.cookie ?? '' }),
+              },
+            }
+          )
+        );
+        account = response.data;
+      } catch (error: unknown) {
+        const status = responseStatus(error);
+        if (status === 409)
+          throw new ConflictException(
+            'Email or creation request already exists. Retry the original request or use a different email.'
+          );
+        if (status === 401 || status === 403)
+          throw new UnauthorizedException(
+            'Account creation requires administrator authorization'
+          );
+        throw new ServiceUnavailableException(
+          'Account service unavailable. Retry this creation request; it is safe to retry.'
+        );
+      }
+      const expectedRole: string = dto.role;
+      if (
+        !account?.uuid ||
+        account.email !== dto.email.trim().toLowerCase() ||
+        account.role !== expectedRole
+      )
+        throw new BadGatewayException(
+          'Account service returned an invalid response'
+        );
+      try {
+        return await this.userMetadataModel
+          .findOneAndUpdate(
+            { uuid: account.uuid },
+            {
+              $set: {
+                email: account.email,
+                role: account.role,
+                firstName: dto.firstName ?? '',
+                lastName: dto.lastName ?? '',
+                avatarUrl: dto.avatarUrl ?? '',
+                description: dto.description ?? '',
+                lastUpdated: new Date(),
+              },
+              $setOnInsert: { uuid: account.uuid },
+            },
+            {
+              upsert: true,
+              new: true,
+              setDefaultsOnInsert: true,
+              runValidators: true,
+            }
+          )
+          .exec();
+      } catch {
+        throw new ServiceUnavailableException(
+          'Account created, but its profile could not be saved. Retry this same request to finish creating the profile.'
+        );
+      }
+    });
   }
 
   async upsertByUuid({
     sub: uuid,
     email,
   }: IActiveUserData): Promise<UserMetadata> {
-    return this.userMetadataModel
-      .findOneAndUpdate(
-        { uuid },
-        {
-          $setOnInsert: { uuid },
-          $set: { email, lastUpdated: new Date() },
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      )
-      .exec();
+    return observeOperation(this.logger, 'metadata_upsert', () =>
+      this.userMetadataModel
+        .findOneAndUpdate(
+          { uuid },
+          {
+            $setOnInsert: { uuid },
+            $set: { email, lastUpdated: new Date() },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        )
+        .exec()
+    );
   }
 
   async create(
@@ -146,8 +159,8 @@ export class UserMetadataService {
         lastUpdated: new Date(),
       });
       return await createUserMetadata.save();
-    } catch (error) {
-      if (error.code === 11000) {
+    } catch (error: unknown) {
+      if (isDuplicateKey(error)) {
         throw new ConflictException(
           'UserMetadata with this name already exists'
         );
@@ -179,28 +192,32 @@ export class UserMetadataService {
     uuid: string,
     updateUserMetadataDto: UpdateUserMetadataDto
   ): Promise<UserMetadata> {
-    try {
-      const updateUserMetadata = await this.userMetadataModel
-        .findOneAndUpdate(
-          { uuid },
-          { ...updateUserMetadataDto, lastUpdated: new Date() },
-          { new: true }
-        )
-        .exec();
+    return observeOperation(this.logger, 'metadata_update', async () => {
+      try {
+        const updateUserMetadata = await this.userMetadataModel
+          .findOneAndUpdate(
+            { uuid },
+            { ...updateUserMetadataDto, lastUpdated: new Date() },
+            { new: true }
+          )
+          .exec();
 
-      if (!updateUserMetadata) {
-        throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);
-      }
+        if (!updateUserMetadata) {
+          throw new NotFoundException(
+            `UserMetadata with ID "${uuid}" not found`
+          );
+        }
 
-      return updateUserMetadata;
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new ConflictException(
-          'UserMetadata with this name already exists'
-        );
+        return updateUserMetadata;
+      } catch (error: unknown) {
+        if (isDuplicateKey(error)) {
+          throw new ConflictException(
+            'UserMetadata with this name already exists'
+          );
+        }
+        throw error;
       }
-      throw error;
-    }
+    });
   }
 
   async findAllPaginated(
@@ -252,12 +269,14 @@ export class UserMetadataService {
   }
 
   async remove(uuid: string): Promise<void> {
-    const result = await this.userMetadataModel
-      .findOneAndDelete({ uuid })
-      .exec();
-    if (!result) {
-      throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);
-    }
+    return observeOperation(this.logger, 'metadata_remove', async () => {
+      const result = await this.userMetadataModel
+        .findOneAndDelete({ uuid })
+        .exec();
+      if (!result) {
+        throw new NotFoundException(`UserMetadata with ID "${uuid}" not found`);
+      }
+    });
   }
 
   async updateRole(
@@ -265,23 +284,27 @@ export class UserMetadataService {
     role: string,
     request: Request
   ): Promise<UserMetadata> {
-    // Confirm identity-role synchronization before advertising success in metadata.
-    // Synthetic seed IDs have no identity; real local accounts use the isolated auth service.
-    if (!localMode() || /^[a-f0-9]{24}$/i.test(userId))
-      await this.updateUserRole(userId, role, request);
-    const updatedUserMetadata = await this.userMetadataModel
-      .findOneAndUpdate(
-        { uuid: userId },
-        { role, lastUpdated: new Date() },
-        { new: true }
-      )
-      .exec();
+    return observeOperation(this.logger, 'metadata_role_update', async () => {
+      // Confirm identity-role synchronization before advertising success in metadata.
+      // Synthetic seed IDs have no identity; real local accounts use the isolated auth service.
+      if (!localMode() || /^[a-f0-9]{24}$/i.test(userId))
+        await this.updateUserRole(userId, role, request);
+      const updatedUserMetadata = await this.userMetadataModel
+        .findOneAndUpdate(
+          { uuid: userId },
+          { role, lastUpdated: new Date() },
+          { new: true }
+        )
+        .exec();
 
-    if (!updatedUserMetadata) {
-      throw new NotFoundException(`UserMetadata with ID "${userId}" not found`);
-    }
+      if (!updatedUserMetadata) {
+        throw new NotFoundException(
+          `UserMetadata with ID "${userId}" not found`
+        );
+      }
 
-    return updatedUserMetadata;
+      return updatedUserMetadata;
+    });
   }
 
   async updateUserRole(
@@ -297,7 +320,7 @@ export class UserMetadataService {
           this.httpService.put(
             'http://127.0.0.1:3005/role',
             { userId, role },
-            { timeout: 10000 }
+            { timeout: 10000, headers: correlationHeaders() }
           )
         );
         if (!result.data) throw new Error('Local account not found');
@@ -308,10 +331,16 @@ export class UserMetadataService {
       }
       return;
     }
-    const accessToken = request.cookies?.accessToken;
+    const cookies: unknown = request.cookies;
+    const accessToken =
+      cookies && typeof cookies === 'object' && 'accessToken' in cookies
+        ? cookies.accessToken
+        : undefined;
     if (!accessToken) {
       throw new UnauthorizedException('No access token found');
     }
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string -- Preserve cookie coercion; owner auth still validates credentials.
+    const credential = String(accessToken);
     try {
       await firstValueFrom(
         this.httpService.put(
@@ -319,19 +348,37 @@ export class UserMetadataService {
           { userId, role },
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
-              Cookie: `accessToken=${accessToken}`,
+              ...correlationHeaders(),
+              Authorization: `Bearer ${credential}`,
+              Cookie: `accessToken=${credential}`,
               'Content-Type': 'application/json',
             },
           }
         )
       );
-    } catch (err) {
-      this.logger.error(
-        `Failed to update user role for user ID: ${userId} to role: ${role}`,
-        err instanceof Error ? err.stack : undefined
-      );
+    } catch {
       throw new InternalServerErrorException('Updateing user role failed');
     }
   }
+}
+
+function responseStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object' || !('response' in error)) return;
+  const response = error.response;
+  if (
+    response &&
+    typeof response === 'object' &&
+    'status' in response &&
+    typeof response.status === 'number'
+  )
+    return response.status;
+}
+
+function isDuplicateKey(error: unknown): boolean {
+  return (
+    !!error &&
+    typeof error === 'object' &&
+    'code' in error &&
+    error.code === 11000
+  );
 }

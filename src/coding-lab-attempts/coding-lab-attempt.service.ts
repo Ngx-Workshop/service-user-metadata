@@ -5,6 +5,7 @@ import {
   ServiceUnavailableException,
   HttpException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -13,6 +14,10 @@ import { HttpService } from '@nestjs/axios';
 import { Request } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { isAxiosError } from 'axios';
+import {
+  correlationHeaders,
+  observeOperation,
+} from '../observability/observability';
 import { CodingLabAttempt } from './coding-lab-attempt.schema';
 import {
   LabAttemptDto,
@@ -24,6 +29,7 @@ import type { components } from './coding-labs.contract';
 type PublishedLab = components['schemas']['PublishedLabDto'];
 @Injectable()
 export class CodingLabAttemptService {
+  private readonly logger = new Logger(CodingLabAttemptService.name);
   constructor(
     @InjectModel(CodingLabAttempt.name)
     private readonly attempts: Model<CodingLabAttempt>,
@@ -39,7 +45,7 @@ export class CodingLabAttemptService {
       throw new ServiceUnavailableException(
         'Configure CODING_LABS_BASE_URL to enable coding labs'
       );
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = correlationHeaders();
     if (request.headers.cookie) headers.Cookie = request.headers.cookie;
     if (request.headers.authorization)
       headers.Authorization = request.headers.authorization;
@@ -98,52 +104,54 @@ export class CodingLabAttemptService {
     return this.dto(await this.owned(uuid, id));
   }
   async start(uuid: string, dto: StartLabAttemptDto, request: Request) {
-    const previous = await this.attempts
-      .findOne({ uuid, requestId: dto.requestId })
-      .lean()
-      .exec();
-    if (previous) return this.dto(previous);
-    const content = await this.upstream<PublishedLab>(dto.labId, request);
-    const now = new Date().toISOString();
-    try {
-      const attempt = await this.attempts
-        .findOneAndUpdate(
-          { uuid, labId: dto.labId, status: 'in-progress' },
-          {
-            $setOnInsert: {
-              uuid,
-              requestId: dto.requestId,
-              labId: dto.labId,
-              versionId: content.versionId,
-              versionNumber: content.versionNumber,
-              title: content.title,
-              code: content.starterCode,
-              revision: 0,
-              startedAt: now,
-              updatedAt: now,
+    return observeOperation(this.logger, 'lab_attempt_start', async () => {
+      const previous = await this.attempts
+        .findOne({ uuid, requestId: dto.requestId })
+        .lean()
+        .exec();
+      if (previous) return this.dto(previous);
+      const content = await this.upstream<PublishedLab>(dto.labId, request);
+      const now = new Date().toISOString();
+      try {
+        const attempt = await this.attempts
+          .findOneAndUpdate(
+            { uuid, labId: dto.labId, status: 'in-progress' },
+            {
+              $setOnInsert: {
+                uuid,
+                requestId: dto.requestId,
+                labId: dto.labId,
+                versionId: content.versionId,
+                versionNumber: content.versionNumber,
+                title: content.title,
+                code: content.starterCode,
+                revision: 0,
+                startedAt: now,
+                updatedAt: now,
+              },
             },
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        )
-        .lean()
-        .exec();
-      return this.dto(attempt!);
-    } catch (error) {
-      if ((error as { code?: number }).code !== 11000) throw error;
-      const existing = await this.attempts
-        .findOne({
-          uuid,
-          $or: [
-            { requestId: dto.requestId },
-            { labId: dto.labId, status: 'in-progress' },
-          ],
-        })
-        .lean()
-        .exec();
-      if (!existing)
-        throw new ConflictException('Attempt changed. Please retry.');
-      return this.dto(existing);
-    }
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+          )
+          .lean()
+          .exec();
+        return this.dto(attempt);
+      } catch (error) {
+        if ((error as { code?: number }).code !== 11000) throw error;
+        const existing = await this.attempts
+          .findOne({
+            uuid,
+            $or: [
+              { requestId: dto.requestId },
+              { labId: dto.labId, status: 'in-progress' },
+            ],
+          })
+          .lean()
+          .exec();
+        if (!existing)
+          throw new ConflictException('Attempt changed. Please retry.');
+        return this.dto(existing);
+      }
+    });
   }
   private writable(uuid: string, id: string, revision: number) {
     return {
@@ -158,23 +166,25 @@ export class CodingLabAttemptService {
     };
   }
   async save(uuid: string, id: string, dto: SaveLabAttemptDto) {
-    await this.owned(uuid, id);
-    const updated = await this.attempts
-      .findOneAndUpdate(
-        this.writable(uuid, id, dto.revision),
-        {
-          $set: { code: dto.code, updatedAt: new Date().toISOString() },
-          $inc: { revision: 1 },
-        },
-        { new: true }
-      )
-      .lean()
-      .exec();
-    if (!updated)
-      throw new ConflictException(
-        'This attempt changed or is being graded. Reload before saving.'
-      );
-    return this.dto(updated);
+    return observeOperation(this.logger, 'lab_attempt_save', async () => {
+      await this.owned(uuid, id);
+      const updated = await this.attempts
+        .findOneAndUpdate(
+          this.writable(uuid, id, dto.revision),
+          {
+            $set: { code: dto.code, updatedAt: new Date().toISOString() },
+            $inc: { revision: 1 },
+          },
+          { new: true }
+        )
+        .lean()
+        .exec();
+      if (!updated)
+        throw new ConflictException(
+          'This attempt changed or is being graded. Reload before saving.'
+        );
+      return this.dto(updated);
+    });
   }
   async submit(
     uuid: string,
@@ -182,76 +192,78 @@ export class CodingLabAttemptService {
     dto: SaveLabAttemptDto,
     request: Request
   ) {
-    if (!dto.code.trim())
-      throw new BadRequestException('Enter a solution before submitting');
-    const current = await this.owned(uuid, id);
-    if (current.status === 'completed') return this.dto(current);
-    const token = randomUUID();
-    const locked = await this.attempts
-      .findOneAndUpdate(
-        this.writable(uuid, id, dto.revision),
-        {
-          $set: {
-            code: dto.code,
-            leaseToken: token,
-            leaseUntil: new Date(Date.now() + 120000),
-            updatedAt: new Date().toISOString(),
-          },
-          $inc: { revision: dto.code === current.code ? 0 : 1 },
-        },
-        { new: true }
-      )
-      .lean()
-      .exec();
-    if (!locked)
-      throw new ConflictException(
-        'This attempt changed or is being graded. Reload before submitting.'
-      );
-    try {
-      const grade = await this.upstream<components['schemas']['LabGradeDto']>(
-        `${current.labId}/grade`,
-        request,
-        { versionId: current.versionId, code: dto.code }
-      );
-      const result: LabAttemptResultDto = {
-        passed: grade.passed,
-        passedTests: grade.passedTests,
-        totalTests: grade.totalTests,
-        durationMs: grade.durationMs,
-        results: grade.results.map((r) => ({
-          name: r.name,
-          status: r.status,
-          message: r.message,
-        })),
-      };
-      const completed = await this.attempts
+    return observeOperation(this.logger, 'lab_attempt_submit', async () => {
+      if (!dto.code.trim())
+        throw new BadRequestException('Enter a solution before submitting');
+      const current = await this.owned(uuid, id);
+      if (current.status === 'completed') return this.dto(current);
+      const token = randomUUID();
+      const locked = await this.attempts
         .findOneAndUpdate(
-          { _id: id, uuid, leaseToken: token },
+          this.writable(uuid, id, dto.revision),
           {
             $set: {
-              result,
-              status: 'completed',
+              code: dto.code,
+              leaseToken: token,
+              leaseUntil: new Date(Date.now() + 120000),
               updatedAt: new Date().toISOString(),
             },
-            $inc: { revision: 1 },
-            $unset: { leaseToken: '', leaseUntil: '' },
+            $inc: { revision: dto.code === current.code ? 0 : 1 },
           },
           { new: true }
         )
         .lean()
         .exec();
-      if (!completed)
+      if (!locked)
         throw new ConflictException(
-          'Submission lease expired. Reload this attempt.'
+          'This attempt changed or is being graded. Reload before submitting.'
         );
-      return this.dto(completed);
-    } finally {
-      await this.attempts
-        .updateOne(
-          { _id: id, uuid, leaseToken: token },
-          { $unset: { leaseToken: '', leaseUntil: '' } }
-        )
-        .exec();
-    }
+      try {
+        const grade = await this.upstream<components['schemas']['LabGradeDto']>(
+          `${current.labId}/grade`,
+          request,
+          { versionId: current.versionId, code: dto.code }
+        );
+        const result: LabAttemptResultDto = {
+          passed: grade.passed,
+          passedTests: grade.passedTests,
+          totalTests: grade.totalTests,
+          durationMs: grade.durationMs,
+          results: grade.results.map((r) => ({
+            name: r.name,
+            status: r.status,
+            message: r.message,
+          })),
+        };
+        const completed = await this.attempts
+          .findOneAndUpdate(
+            { _id: id, uuid, leaseToken: token },
+            {
+              $set: {
+                result,
+                status: 'completed',
+                updatedAt: new Date().toISOString(),
+              },
+              $inc: { revision: 1 },
+              $unset: { leaseToken: '', leaseUntil: '' },
+            },
+            { new: true }
+          )
+          .lean()
+          .exec();
+        if (!completed)
+          throw new ConflictException(
+            'Submission lease expired. Reload this attempt.'
+          );
+        return this.dto(completed);
+      } finally {
+        await this.attempts
+          .updateOne(
+            { _id: id, uuid, leaseToken: token },
+            { $unset: { leaseToken: '', leaseUntil: '' } }
+          )
+          .exec();
+      }
+    });
   }
 }

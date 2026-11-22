@@ -119,14 +119,18 @@ describe('Owned coding lab attempts', () => {
           code: 'starter',
           versionId: 'version',
           requestId: 'new-request',
-        }),
+        }) as unknown,
       },
       expect.objectContaining({ upsert: true })
     );
     expect(http.get).toHaveBeenCalledWith(
       'http://coding-labs/published-labs/lab',
       expect.objectContaining({
-        headers: { Cookie: 'session=test', Authorization: 'Bearer test' },
+        headers: expect.objectContaining({
+          Cookie: 'session=test',
+          Authorization: 'Bearer test',
+          'X-Request-ID': expect.stringMatching(/^[0-9a-f-]{36}$/) as unknown,
+        }) as unknown,
       })
     );
   });
@@ -160,15 +164,27 @@ describe('Owned coding lab attempts', () => {
       { versionId: 'version', code: 'solution' },
       expect.anything()
     );
-    expect(model.findOneAndUpdate.mock.calls[1][1].$set.result).toEqual({
-      passed: true,
-      passedTests: 2,
-      totalTests: 2,
-      durationMs: 10,
-      results: [{ name: 'sample', status: 'passed', message: undefined }],
-    });
+    expect(model.findOneAndUpdate).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          result: {
+            passed: true,
+            passedTests: 2,
+            totalTests: 2,
+            durationMs: 10,
+            results: [{ name: 'sample', status: 'passed', message: undefined }],
+          },
+        }) as unknown,
+      }),
+      expect.anything()
+    );
     expect(model.updateOne).toHaveBeenCalledWith(
-      expect.objectContaining({ uuid: 'user', leaseToken: expect.any(String) }),
+      expect.objectContaining({
+        uuid: 'user',
+        leaseToken: expect.any(String) as unknown,
+      }),
       { $unset: { leaseToken: '', leaseUntil: '' } }
     );
   });
@@ -193,7 +209,13 @@ describe('Owned coding lab attempts', () => {
       )
     ).rejects.toThrow(ServiceUnavailableException);
     expect(model.findOneAndUpdate).toHaveBeenCalledTimes(1);
-    expect(model.findOneAndUpdate.mock.calls[0][1].$set.code).toBe('solution');
+    expect(model.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        $set: expect.objectContaining({ code: 'solution' }) as unknown,
+      }),
+      expect.anything()
+    );
     expect(model.updateOne).toHaveBeenCalled();
   });
   it('refuses a duplicate grading lease without calling the runner', async () => {

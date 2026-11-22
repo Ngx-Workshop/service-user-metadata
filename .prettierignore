@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+contracts/
+openapi.json
+package-lock.json
+**/*.contract.ts
+.husky/_/
+.env*
+deploy-source.tar

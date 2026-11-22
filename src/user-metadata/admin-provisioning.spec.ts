@@ -4,6 +4,10 @@ import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { Role } from '@tmdjr/ngx-auth-client';
 import { of, throwError } from 'rxjs';
 import { validate } from 'class-validator';
+import { HttpService } from '@nestjs/axios';
+import { Model } from 'mongoose';
+import { Request } from 'express';
+import { UserMetadataDocument } from './schemas/user-metadata.schema';
 const dto: AdminCreateUserDto = {
   email: 'user@example.invalid',
   password: 'Examplepass12345',
@@ -25,7 +29,10 @@ describe('Account and profile provisioning', () => {
     http.post.mockReturnValue(
       of({ data: { uuid: 'account-id', email: dto.email, role: dto.role } })
     );
-    service = new UserMetadataService(model as any, http as any);
+    service = new UserMetadataService(
+      model as unknown as Model<UserMetadataDocument>,
+      http as unknown as HttpService
+    );
   });
   afterEach(() => {
     process.env = { ...original };
@@ -35,7 +42,7 @@ describe('Account and profile provisioning', () => {
       (
         await service.createAccount(dto, {
           headers: { cookie: 'accessToken=admin-session' },
-        } as any)
+        } as Request)
       ).uuid
     ).toBe('account-id');
     expect(http.post).toHaveBeenCalledWith(
@@ -47,7 +54,10 @@ describe('Account and profile provisioning', () => {
         requestId: dto.requestId,
       },
       expect.objectContaining({
-        headers: { Cookie: 'accessToken=admin-session' },
+        headers: expect.objectContaining({
+          Cookie: 'accessToken=admin-session',
+          'X-Request-ID': expect.stringMatching(/^[0-9a-f-]{36}$/) as unknown,
+        }) as unknown,
       })
     );
     expect(model.findOneAndUpdate).toHaveBeenCalledWith(
@@ -59,14 +69,19 @@ describe('Account and profile provisioning', () => {
   it('reports a recoverable partial failure and completes the same account on retry', async () => {
     exec.mockRejectedValueOnce(new Error('database unavailable'));
     await expect(
-      service.createAccount(dto, { headers: {} } as any)
+      service.createAccount(dto, { headers: {} } as Request)
     ).rejects.toThrow('Account created, but its profile');
     expect(
-      (await service.createAccount(dto, { headers: {} } as any)).uuid
+      (await service.createAccount(dto, { headers: {} } as Request)).uuid
     ).toBe('account-id');
-    expect(http.post.mock.calls[0][1].requestId).toBe(
-      http.post.mock.calls[1][1].requestId
-    );
+    for (const call of [1, 2]) {
+      expect(http.post).toHaveBeenNthCalledWith(
+        call,
+        expect.any(String),
+        expect.objectContaining({ requestId: dto.requestId }),
+        expect.anything()
+      );
+    }
   });
   it('never calls hosted auth from isolated local metadata mode', async () => {
     process.env.USER_METADATA_LOCAL_DEV = 'true';
@@ -74,23 +89,28 @@ describe('Account and profile provisioning', () => {
     process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/user_metadata_local';
     await service.createAccount(dto, {
       headers: { cookie: 'must-not-leave-local' },
-    } as any);
-    expect(http.post.mock.calls[0][0]).toBe(
-      'http://127.0.0.1:3005/admin/users'
+    } as Request);
+    expect(http.post).toHaveBeenCalledWith(
+      'http://127.0.0.1:3005/admin/users',
+      expect.anything(),
+      expect.objectContaining({
+        headers: {
+          'X-Request-ID': expect.stringMatching(/^[0-9a-f-]{36}$/) as unknown,
+        },
+      })
     );
-    expect(http.post.mock.calls[0][2].headers).toEqual({});
   });
   it('propagates duplicate/unavailable errors without writing metadata', async () => {
     http.post.mockReturnValue(
       throwError(() => ({ response: { status: 409 } }))
     );
     await expect(
-      service.createAccount(dto, { headers: {} } as any)
+      service.createAccount(dto, { headers: {} } as Request)
     ).rejects.toThrow('already exists');
     expect(model.findOneAndUpdate).not.toHaveBeenCalled();
     http.post.mockReturnValue(throwError(() => new Error('offline')));
     await expect(
-      service.createAccount(dto, { headers: {} } as any)
+      service.createAccount(dto, { headers: {} } as Request)
     ).rejects.toThrow('unavailable');
   });
   it('requires email, credentials and role rather than inheriting optional profile validation', async () => {
@@ -101,7 +121,33 @@ describe('Account and profile provisioning', () => {
       (await validate(new AdminCreateUserDto())).length
     ).toBeGreaterThanOrEqual(4);
     expect(
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- Reading decorator metadata, not invoking the method.
       Reflect.getMetadata('roles', UserMetadataController.prototype.createUser)
     ).toEqual([Role.Admin]);
+  });
+  it.each([401, 403])(
+    'preserves upstream authorization denial (%s) without creating a profile',
+    async (status) => {
+      http.post.mockReturnValue(throwError(() => ({ response: { status } })));
+      await expect(
+        service.createAccount(dto, { headers: {} } as Request)
+      ).rejects.toThrow('administrator authorization');
+      expect(model.findOneAndUpdate).not.toHaveBeenCalled();
+    }
+  );
+  it('rejects a mismatched identity response before persistence', async () => {
+    http.post.mockReturnValue(
+      of({
+        data: {
+          uuid: 'account-id',
+          email: 'different@example.invalid',
+          role: dto.role,
+        },
+      })
+    );
+    await expect(
+      service.createAccount(dto, { headers: {} } as Request)
+    ).rejects.toThrow('invalid response');
+    expect(model.findOneAndUpdate).not.toHaveBeenCalled();
   });
 });

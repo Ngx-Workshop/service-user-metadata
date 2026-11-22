@@ -4,11 +4,16 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
+  Logger,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Request } from 'express';
 import { firstValueFrom } from 'rxjs';
+import {
+  correlationHeaders,
+  observeOperation,
+} from '../observability/observability';
 import {
   assertLocalDatabase,
   localMode,
@@ -32,6 +37,7 @@ import {
 
 @Injectable()
 export class WorkshopProgressService {
+  private readonly logger = new Logger(WorkshopProgressService.name);
   constructor(
     @InjectModel(WorkshopProgress.name)
     private readonly progress: Model<WorkshopProgress>,
@@ -58,7 +64,7 @@ export class WorkshopProgressService {
       throw new ServiceUnavailableException(
         `Configure ${baseKey} to enable the live workshop journey`
       );
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = correlationHeaders();
     // Never forward arbitrary incoming headers or a user-provided upstream URL.
     if (request.headers.cookie) headers.Cookie = request.headers.cookie;
     if (request.headers.authorization)
@@ -151,22 +157,24 @@ export class WorkshopProgressService {
   }
 
   async catalog(uuid: string, request: Request): Promise<WorkshopProgressDto> {
-    const { progress, sections, workshops, assessments } = await this.sources(
-      uuid,
-      request
-    );
-    return {
-      demo: this.demo(),
-      sections: sections.map((section) =>
-        sectionProgress(
-          section,
-          workshops,
-          assessments.find((a) => a.subject === section._id),
-          progress,
-          assessments
-        )
-      ),
-    };
+    return observeOperation(this.logger, 'workshop_catalog', async () => {
+      const { progress, sections, workshops, assessments } = await this.sources(
+        uuid,
+        request
+      );
+      return {
+        demo: this.demo(),
+        sections: sections.map((section) =>
+          sectionProgress(
+            section,
+            workshops,
+            assessments.find((a) => a.subject === section._id),
+            progress,
+            assessments
+          )
+        ),
+      };
+    });
   }
 
   private async eligible(uuid: string, id: string, request: Request) {
@@ -182,30 +190,34 @@ export class WorkshopProgressService {
   }
 
   async start(uuid: string, id: string, request: Request) {
-    await this.eligible(uuid, id, request);
-    await this.progress
-      .updateOne(
-        { uuid },
-        {
-          $setOnInsert: { uuid },
-          $addToSet: { startedWorkshopIds: id },
-        },
-        { upsert: true, runValidators: true }
-      )
-      .exec();
-    return this.catalog(uuid, request);
+    return observeOperation(this.logger, 'workshop_start', async () => {
+      await this.eligible(uuid, id, request);
+      await this.progress
+        .updateOne(
+          { uuid },
+          {
+            $setOnInsert: { uuid },
+            $addToSet: { startedWorkshopIds: id },
+          },
+          { upsert: true, runValidators: true }
+        )
+        .exec();
+      return this.catalog(uuid, request);
+    });
   }
 
   async complete(uuid: string, id: string, request: Request) {
-    const workshop = await this.eligible(uuid, id, request);
-    const record = await this.progress.findOne({ uuid }).lean().exec();
-    if (!record?.startedWorkshopIds.includes(id))
-      throw new ForbiddenException('Start the workshop before completing it');
-    if (workshop.status !== 'completed')
-      throw new ForbiddenException(
-        'View every workshop page and complete its assessments first'
-      );
-    return this.catalog(uuid, request);
+    return observeOperation(this.logger, 'workshop_complete', async () => {
+      const workshop = await this.eligible(uuid, id, request);
+      const record = await this.progress.findOne({ uuid }).lean().exec();
+      if (!record?.startedWorkshopIds.includes(id))
+        throw new ForbiddenException('Start the workshop before completing it');
+      if (workshop.status !== 'completed')
+        throw new ForbiddenException(
+          'View every workshop page and complete its assessments first'
+        );
+      return this.catalog(uuid, request);
+    });
   }
 
   async page(
@@ -214,42 +226,46 @@ export class WorkshopProgressService {
     pageId: string,
     request: Request
   ): Promise<WorkshopReadingDto> {
-    const workshop = await this.eligible(uuid, id, request);
-    if (
-      !workshop.workshopDocuments.some(
-        (p) => p.kind === 'PAGE' && p._id === pageId
-      )
-    ) {
-      throw new NotFoundException('Page does not belong to this workshop');
-    }
-    if (this.demo()) {
-      const page = examplePages[pageId];
-      if (!page) throw new NotFoundException('Example page not found');
-      return page;
-    }
-    return this.get<WorkshopReadingDto>(
-      'DOCKER_NET_NAME_DOCUMENT',
-      `workshop/${encodeURIComponent(pageId)}`,
-      request
-    );
+    return observeOperation(this.logger, 'workshop_page', async () => {
+      const workshop = await this.eligible(uuid, id, request);
+      if (
+        !workshop.workshopDocuments.some(
+          (p) => p.kind === 'PAGE' && p._id === pageId
+        )
+      ) {
+        throw new NotFoundException('Page does not belong to this workshop');
+      }
+      if (this.demo()) {
+        const page = examplePages[pageId];
+        if (!page) throw new NotFoundException('Example page not found');
+        return page;
+      }
+      return this.get<WorkshopReadingDto>(
+        'DOCKER_NET_NAME_DOCUMENT',
+        `workshop/${encodeURIComponent(pageId)}`,
+        request
+      );
+    });
   }
 
   async seen(uuid: string, id: string, pageId: string, request: Request) {
-    const record = await this.progress.findOne({ uuid }).lean().exec();
-    if (!record?.startedWorkshopIds.includes(id))
-      throw new ForbiddenException(
-        'Start the workshop before viewing its pages'
-      );
-    // Check ownership, eligibility and successful content retrieval before accepting a visit.
-    await this.page(uuid, id, pageId, request);
-    await this.progress
-      .updateOne(
-        { uuid },
-        { $addToSet: { viewedPages: { workshopId: id, pageId } } },
-        { runValidators: true }
-      )
-      .exec();
-    return this.catalog(uuid, request);
+    return observeOperation(this.logger, 'workshop_page_seen', async () => {
+      const record = await this.progress.findOne({ uuid }).lean().exec();
+      if (!record?.startedWorkshopIds.includes(id))
+        throw new ForbiddenException(
+          'Start the workshop before viewing its pages'
+        );
+      // Check ownership, eligibility and successful content retrieval before accepting a visit.
+      await this.page(uuid, id, pageId, request);
+      await this.progress
+        .updateOne(
+          { uuid },
+          { $addToSet: { viewedPages: { workshopId: id, pageId } } },
+          { runValidators: true }
+        )
+        .exec();
+      return this.catalog(uuid, request);
+    });
   }
 
   async resetExample(uuid: string) {

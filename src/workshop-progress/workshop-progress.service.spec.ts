@@ -219,7 +219,11 @@ describe('Workshop progress commands', () => {
     expect(http.get).toHaveBeenCalledWith(
       'http://assessment.invalid/api/assessment-test/learner/catalog',
       {
-        headers: { Cookie: 'session=owned', Authorization: 'Bearer owned' },
+        headers: expect.objectContaining({
+          Cookie: 'session=owned',
+          Authorization: 'Bearer owned',
+          'X-Request-ID': expect.stringMatching(/^[0-9a-f-]{36}$/) as unknown,
+        }) as unknown,
         timeout: 8000,
       }
     );
@@ -232,24 +236,63 @@ describe('Workshop progress commands', () => {
     record.viewedPages = [{ workshopId: 'live-workshop', pageId: 'first' }];
     let completed = false;
     http.get.mockImplementation((url: string) => {
-      if (url.endsWith('workshop/second')) return throwError(() => new Error('Content unavailable'));
-      return of({ data: url.endsWith('navigation/sections')
-        ? { sections: { angular: { _id: 'angular', sectionTitle: 'Angular' } } }
-        : url.includes('learner/catalog')
-          ? [{ subject: 'angular', completedCount: 1, highestPassedLevel: 0, tests: [{ id: 'required', status: completed ? 'completed' : 'available' }] }]
-          : [{ _id: 'live-workshop', sectionId: 'angular', name: 'Live', summary: '', sortId: 0, workshopDocuments: [
-            { _id: 'first', kind: 'PAGE', name: 'First', sortId: 0 },
-            { _id: 'second', kind: 'PAGE', name: 'Second', sortId: 1 },
-            { _id: 'assessment', kind: 'ASSESSMENT_TEST', resourceId: 'required', name: 'Test', sortId: 2 },
-          ] }] });
+      if (url.endsWith('workshop/second'))
+        return throwError(() => new Error('Content unavailable'));
+      return of({
+        data: url.endsWith('navigation/sections')
+          ? {
+              sections: {
+                angular: { _id: 'angular', sectionTitle: 'Angular' },
+              },
+            }
+          : url.includes('learner/catalog')
+            ? [
+                {
+                  subject: 'angular',
+                  completedCount: 1,
+                  highestPassedLevel: 0,
+                  tests: [
+                    {
+                      id: 'required',
+                      status: completed ? 'completed' : 'available',
+                    },
+                  ],
+                },
+              ]
+            : [
+                {
+                  _id: 'live-workshop',
+                  sectionId: 'angular',
+                  name: 'Live',
+                  summary: '',
+                  sortId: 0,
+                  workshopDocuments: [
+                    { _id: 'first', kind: 'PAGE', name: 'First', sortId: 0 },
+                    { _id: 'second', kind: 'PAGE', name: 'Second', sortId: 1 },
+                    {
+                      _id: 'assessment',
+                      kind: 'ASSESSMENT_TEST',
+                      resourceId: 'required',
+                      name: 'Test',
+                      sortId: 2,
+                    },
+                  ],
+                },
+              ],
+      });
     });
-    await expect(service.seen('learner', 'live-workshop', 'second', request)).rejects.toThrow('unavailable');
+    await expect(
+      service.seen('learner', 'live-workshop', 'second', request)
+    ).rejects.toThrow('unavailable');
     expect(record.viewedPages).toHaveLength(1);
     expect(model.updateOne).not.toHaveBeenCalled();
     record.viewedPages.push({ workshopId: 'live-workshop', pageId: 'second' });
-    expect((await service.catalog('learner', request)).sections[0].completedCount).toBe(0);
+    expect(
+      (await service.catalog('learner', request)).sections[0].completedCount
+    ).toBe(0);
     completed = true;
-    expect((await service.catalog('learner', request)).sections[0].completedCount).toBe(1);
+    expect(
+      (await service.catalog('learner', request)).sections[0].completedCount
+    ).toBe(1);
   });
-
 });

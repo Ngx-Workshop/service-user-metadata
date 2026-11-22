@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Param,
   Patch,
   Put,
@@ -35,12 +34,11 @@ import {
 } from './dto/user-metadata.dto';
 import { AdminCreateUserDto } from './dto/admin-create-user.dto';
 import { UserMetadataService } from './user-metadata.service';
+import type { Request as ExpressRequest } from 'express';
 
 @ApiTags('User Metadata')
 @Controller('user-metadata')
 export class UserMetadataController {
-  private readonly logger = new Logger(UserMetadataController.name);
-
   constructor(private readonly userMetadataService: UserMetadataService) {}
 
   @Post('admin/users')
@@ -49,7 +47,7 @@ export class UserMetadataController {
   createUser(
     @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
     dto: AdminCreateUserDto,
-    @Request() request
+    @Request() request: ExpressRequest
   ) {
     return this.userMetadataService.createAccount(dto, request);
   }
@@ -59,13 +57,11 @@ export class UserMetadataController {
   @HttpCode(HttpStatus.OK)
   async upsertByUserId(@ActiveUser() user: IActiveUserData) {
     await this.userMetadataService.upsertByUuid(user);
-    this.logger.log(`Upserted user metadata for user ID: ${user.sub}`);
   }
 
   @Get()
   @ApiOkResponse({ type: UserMetadataDto })
   findOne(@ActiveUser() user: IActiveUserData) {
-    this.logger.log(`Fetching user metadata for user ID: ${user.sub}`);
     return this.userMetadataService.findOne(user);
   }
 
@@ -73,7 +69,6 @@ export class UserMetadataController {
   @Roles(Role.Admin)
   @ApiOkResponse({ type: UserMetadataDto })
   findOneAdmin(@Param('userId') userId: string) {
-    this.logger.log(`Fetching user metadata for user ID: ${userId} by admin`);
     return this.userMetadataService.findOneAdmin(userId);
   }
 
@@ -91,7 +86,6 @@ export class UserMetadataController {
     paginationQuery: SearchUserMetadataQueryDto
   ) {
     const { page, limit, query, role } = paginationQuery;
-    this.logger.log({ event: 'user_metadata_page_requested', page, limit });
     return this.userMetadataService.findAllPaginated(page, limit, query, role);
   }
 
@@ -102,11 +96,8 @@ export class UserMetadataController {
     @Param('userId') userId: string,
     @Body(new ValidationPipe({ whitelist: true }))
     dto: UpdateRoleDto,
-    @Request() request
+    @Request() request: ExpressRequest
   ) {
-    this.logger.log(
-      `Updating role for user ID: ${userId} to role: ${dto.role}`
-    );
     return this.userMetadataService.updateRole(userId, dto.role, request);
   }
 
@@ -118,7 +109,6 @@ export class UserMetadataController {
     @Body(new ValidationPipe({ whitelist: true }))
     updateUserMetadataDto: UpdateUserMetadataDto
   ) {
-    this.logger.log(`Admin is updating user metadata for user ID: ${userId}`);
     return this.userMetadataService.update(userId, updateUserMetadataDto);
   }
 
@@ -128,7 +118,6 @@ export class UserMetadataController {
     @ActiveUser() user: IActiveUserData,
     @Body() updateUserMetadataDto: UpdateUserMetadataDto
   ) {
-    this.logger.log(`User is updating user metadata for user ID: ${user.sub}`);
     return this.userMetadataService.update(user.sub, updateUserMetadataDto);
   }
 

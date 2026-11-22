@@ -1,25 +1,6 @@
-import {
-  CodingLabAttempt,
-  CodingLabAttemptSchema,
-} from '../coding-lab-attempts/coding-lab-attempt.schema';
-import { CodingLabAttemptService } from '../coding-lab-attempts/coding-lab-attempt.service';
-import { CodingLabAttemptController } from '../coding-lab-attempts/coding-lab-attempt.controller';
-import {
-  WorkshopProgress,
-  WorkshopProgressSchema,
-} from '../workshop-progress/workshop-progress.schema';
-import { WorkshopProgressService } from '../workshop-progress/workshop-progress.service';
-import { WorkshopProgressController } from '../workshop-progress/workshop-progress.controller';
-import { UserMetadataAuthGuard } from '../local-development/user-metadata-auth.guard';
 import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
-import {
-  NgxAuthClientModule,
-  RemoteAuthGuard,
-  RolesGuard,
-} from '@tmdjr/ngx-auth-client';
 import {
   UserMetadata,
   UserMetadataSchema,
@@ -33,54 +14,16 @@ const SCHEMA_IMPORTS =
     : [
         MongooseModule.forFeature([
           { name: UserMetadata.name, schema: UserMetadataSchema },
-          { name: CodingLabAttempt.name, schema: CodingLabAttemptSchema },
-          { name: WorkshopProgress.name, schema: WorkshopProgressSchema },
         ]),
       ];
-// When generating OpenAPI, stub out the Mongoose model and the guard
+// Model stubs are only used by the DB-disabled contract generator.
 const FAKE_PROVIDERS =
   process.env.GENERATE_OPENAPI === 'true'
-    ? [
-        { provide: getModelToken(WorkshopProgress.name), useValue: {} },
-        { provide: getModelToken(CodingLabAttempt.name), useValue: {} },
-        {
-          provide: getModelToken(UserMetadata.name),
-          // Minimal fake the service can accept; if service calls methods during generation (it shouldn't), add no-op fns
-          useValue: {
-            // common Mongoose methods we might accidentally touch
-            find: () => ({ exec: () => Promise.resolve([]) }),
-            findById: () => ({ exec: () => Promise.resolve(null) }),
-            findByIdAndUpdate: () => ({ exec: () => Promise.resolve(null) }),
-            findOne: () => ({ exec: () => Promise.resolve(null) }),
-          },
-        },
-        {
-          // In case the guard has runtime deps — make it a no-op
-          provide: RemoteAuthGuard,
-          useValue: { canActivate: () => true },
-        },
-      ]
+    ? [{ provide: getModelToken(UserMetadata.name), useValue: {} }]
     : [];
 @Module({
-  imports: [HttpModule, NgxAuthClientModule, ...SCHEMA_IMPORTS],
-  controllers: [
-    UserMetadataController,
-    WorkshopProgressController,
-    CodingLabAttemptController,
-  ],
-  providers: [
-    UserMetadataService,
-    CodingLabAttemptService,
-    WorkshopProgressService,
-    {
-      provide: APP_GUARD,
-      useClass: UserMetadataAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-    ...FAKE_PROVIDERS,
-  ],
+  imports: [HttpModule, ...SCHEMA_IMPORTS],
+  controllers: [UserMetadataController],
+  providers: [UserMetadataService, ...FAKE_PROVIDERS],
 })
 export class UserMetadataModule {}

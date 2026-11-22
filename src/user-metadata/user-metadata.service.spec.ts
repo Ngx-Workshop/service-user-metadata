@@ -6,6 +6,7 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserMetadata } from './schemas/user-metadata.schema';
 import { UserMetadataService } from './user-metadata.service';
+import { throwError } from 'rxjs';
 
 describe('UserMetadataService', () => {
   let service: UserMetadataService;
@@ -53,7 +54,7 @@ describe('UserMetadataService', () => {
         $setOnInsert: { uuid: 'uuid' },
         $set: {
           email: 'test@example.com',
-          lastUpdated: expect.any(Date),
+          lastUpdated: expect.any(Date) as unknown,
         },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -69,7 +70,7 @@ describe('UserMetadataService', () => {
     await service.updateRole('local-user', 'publisher', {} as Request);
     expect(findOneAndUpdateMock).toHaveBeenCalledWith(
       { uuid: 'local-user' },
-      { role: 'publisher', lastUpdated: expect.any(Date) },
+      { role: 'publisher', lastUpdated: expect.any(Date) as unknown },
       { new: true }
     );
     expect(sync).not.toHaveBeenCalled();
@@ -111,5 +112,45 @@ describe('UserMetadataService', () => {
       service.updateUserRole('local-user', 'admin', {} as Request)
     ).rejects.toThrow('isolated');
     expect(http.put).not.toHaveBeenCalled();
+  });
+  it('does not change metadata when a role update has no access token', async () => {
+    delete process.env.USER_METADATA_LOCAL_DEV;
+    await expect(
+      service.updateRole('user', 'admin', { cookies: {} } as Request)
+    ).rejects.toThrow('No access token found');
+    expect(findOneAndUpdateMock).not.toHaveBeenCalled();
+  });
+  it('retains owner validation and error mapping for coerced cookie values', async () => {
+    delete process.env.USER_METADATA_LOCAL_DEV;
+    http.put.mockReturnValue(
+      throwError(() => new Error('owner rejected token'))
+    );
+    const incoming: Partial<Request> = { cookies: { accessToken: 42 } };
+    await expect(
+      service.updateRole('user', 'admin', incoming as Request)
+    ).rejects.toThrow('Updateing user role failed');
+    expect(http.put).toHaveBeenCalledWith(
+      expect.stringContaining('/role'),
+      { userId: 'user', role: 'admin' },
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer 42',
+          Cookie: 'accessToken=42',
+        }) as unknown,
+      })
+    );
+    expect(findOneAndUpdateMock).not.toHaveBeenCalled();
+  });
+  it('preserves not-found and persistence failure after successful identity synchronization', async () => {
+    delete process.env.USER_METADATA_LOCAL_DEV;
+    jest.spyOn(service, 'updateUserRole').mockResolvedValue();
+    execMock.mockResolvedValueOnce(null);
+    await expect(
+      service.updateRole('missing', 'admin', {} as Request)
+    ).rejects.toThrow('not found');
+    execMock.mockRejectedValueOnce(new Error('storage unavailable'));
+    await expect(
+      service.updateRole('user', 'admin', {} as Request)
+    ).rejects.toThrow('storage unavailable');
   });
 });
