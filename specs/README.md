@@ -16,3 +16,5 @@ not certified. Older unfinished work retains its recorded status below.
 Follow the [local workflow](../.specify/README.md). Keep historical records.
 
 - [001-local-development](001-local-development/spec.md): Historical record; inspect its handoff/tasks for actual status.
+
+- [003-deployment-management](003-deployment-management/spec.md): Implemented locally; automatic verification/deployment, manual publication.

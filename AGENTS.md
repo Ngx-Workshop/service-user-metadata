@@ -32,3 +32,5 @@ with Husky/lint-staged, CI checks and safe domain logging through existing
 observability. Local implementation/checks are recorded; Docker image execution,
 remote Node 22 CI and live Grafana receipt are not verified. No next implementation
 feature has been selected.
+
+Current deployment policy: [deployment-workflows](docs/deployment-workflows.md). Automatic main delivery verifies/deploys; npm publication is manual only. This supersedes older automatic-publishing instructions.

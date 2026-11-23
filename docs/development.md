@@ -93,3 +93,5 @@ receipt and remote GitHub workflow execution are separate checks, not implied by
 local installation/test success. Do not use paid provider calls or production
 writes as tests. npm reports dependency advisories; this task does not apply
 unrelated dependency upgrades or `npm audit fix`.
+
+Deployment and npm publication now follow [deployment-workflows](deployment-workflows.md).

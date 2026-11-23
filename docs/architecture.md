@@ -59,3 +59,5 @@ The source-backed [maintenance audit](../specs/002-code-maintenance/audit.md)
 records selected findings, preserved policies and deferred issues. This is not a
 full security audit or live integration certification. External ownership remains
 HTTP-only; no other service's collections are accessed.
+
+Generated deployment orchestration is centrally managed by the Node CLI; see [deployment-workflows](deployment-workflows.md).
